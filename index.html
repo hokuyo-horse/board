@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>牧場 治療・直検ボード</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="直検ボード">
+<meta name="theme-color" content="#175645">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<style>
+  :root{
+    --paper:#E7EDE9;
+    --ink:#12201B;
+    --muted:#556A61;
+    --brand:#175645;
+  }
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);}
+  body{
+    display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+    padding-left:env(safe-area-inset-left, 0px);
+    padding-right:env(safe-area-inset-right, 0px);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    -webkit-text-size-adjust:100%;
+    overscroll-behavior:none;
+  }
+  #app{flex:1 1 auto;border:0;width:100%;display:block;background:var(--paper);}
+  #splash{
+    position:fixed;inset:0;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    z-index:10;transition:opacity .25s ease;
+  }
+  #splash img{width:96px;height:96px;border-radius:22px;}
+  #splash .t{font-size:15px;color:var(--muted);}
+  #splash.gone{opacity:0;pointer-events:none;}
+  #fail{
+    display:none;padding:24px;max-width:520px;margin:0 auto;color:var(--ink);line-height:1.7;
+  }
+  #fail h1{font-size:18px;margin:0 0 10px;}
+  #fail a{color:var(--brand);}
+  #fail code{background:#fff;padding:2px 6px;border-radius:5px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <img src="icon-180.png" alt="">
+  <div class="t">読み込んでいます…</div>
+</div>
+
+<div id="fail">
+  <h1>牧場コードが指定されていません</h1>
+  <p>このページは牧場ごとのコードを付けて開きます。配られたリンクをそのまま開いてください。</p>
+  <p><code>?farm=（牧場コード）</code> が付いたリンクです。</p>
+</div>
+
+<iframe id="app" title="牧場 治療・直検ボード" allow="clipboard-write"></iframe>
+
+<script>
+(function(){
+  "use strict";
+
+  /* アプリ本体（Apps Script のウェブアプリ）のURL。
+     デプロイを作り直してURLが変わったときは、ここだけ書き換える。 */
+  var APP_URL = "https://script.google.com/macros/s/AKfycby6SvsntasPaD5mIEerD5mrQ3Ib-uqQwD1jeLtt_dlVAJc62EtJnjIziQ6W_DHQPrxmiw/exec";
+
+  var params = new URLSearchParams(location.search);
+  var farm = (params.get("farm") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32);
+
+  var splash = document.getElementById("splash");
+  var frame  = document.getElementById("app");
+  var fail   = document.getElementById("fail");
+
+  if(!farm){
+    splash.style.display = "none";
+    frame.style.display = "none";
+    fail.style.display = "block";
+    return;
+  }
+
+  /* ホーム画面に追加したときの名前を牧場ごとに変える。
+     牧場名はアプリ本体が読み込んだあとに教えてくれる（このファイルには牧場の情報を持たない）。
+     iOSは「ホーム画面に追加」を押した時点のタイトルを使う。 */
+  window.addEventListener("message", function(ev){
+    var d = ev.data;
+    if(!d || d.board !== "farmName") return;
+    var nm = String(d.name || "").slice(0, 40);
+    if(!nm) return;
+    document.title = nm;
+    var mt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if(mt) mt.setAttribute("content", nm);
+  });
+
+  frame.addEventListener("load", function(){
+    splash.classList.add("gone");
+    setTimeout(function(){ splash.style.display = "none"; }, 300);
+  });
+
+  frame.src = APP_URL + "?farm=" + encodeURIComponent(farm);
+
+  /* 読み込みが極端に遅いときでも、いつまでも隠さない */
+  setTimeout(function(){
+    splash.classList.add("gone");
+    setTimeout(function(){ splash.style.display = "none"; }, 300);
+  }, 12000);
+
+  /* Android で「アプリをインストール」を出すために必要 */
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){ /* 失敗しても動く */ });
+    });
+  }
+})();
+</script>
+</body>
+</html>
