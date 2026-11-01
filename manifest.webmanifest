@@ -1,8 +1,6 @@
 {
   "name": "牧場 治療・直検ボード",
   "short_name": "直検ボード",
-  "start_url": "./",
-  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#E7EDE9",
