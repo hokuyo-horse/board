@@ -1,0 +1,3383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>牧場 治療・直検ボード</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="直検ボード">
+<meta name="theme-color" content="#175645">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top, 0px);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  height:100%;
+
+  --paper:#E7EDE9;
+  --card:#FFFFFF;
+  --ink:#12201B;
+  --muted:#556A61;
+  --line:#CBD6D0;
+  --line-strong:#A9BAB1;
+
+  --treat:#9E3C27;
+  --treat-soft:#F7E6E1;
+  --exam:#1F6A56;
+  --exam-soft:#DDEDE6;
+  --warn:#8A5A0B;
+  --warn-soft:#F8EBD2;
+
+  --cont:#1F4E8C;
+  --cont-soft:#DCE6F5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1512;
+    --card:#19221E;
+    --ink:#E7EFE9;
+    --muted:#95A9A0;
+    --line:#2A3833;
+    --line-strong:#3D4F48;
+    --treat:#E08C72;
+    --treat-soft:#3A241D;
+    --exam:#6DC1A4;
+    --exam-soft:#152F27;
+    --warn:#D9A84E;
+    --warn-soft:#332614;
+
+    --cont:#8FB6E8;
+    --cont-soft:#17283F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1512;
+  --card:#19221E;
+  --ink:#E7EFE9;
+  --muted:#95A9A0;
+  --line:#2A3833;
+  --line-strong:#3D4F48;
+  --treat:#E08C72;
+  --treat-soft:#3A241D;
+  --exam:#6DC1A4;
+  --exam-soft:#152F27;
+  --warn:#D9A84E;
+  --warn-soft:#332614;
+
+  --cont:#8FB6E8;
+  --cont-soft:#17283F;
+}
+*,*::before,*::after{box-sizing:inherit}
+
+body{
+  margin:0;height:100%;
+  display:flex;flex-direction:column;
+  background:var(--paper);color:var(--ink);
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- header ---------- */
+.top{
+  flex:none;background:var(--card);border-bottom:1px solid var(--line);
+  padding:10px 14px 8px;
+}
+.top-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.brand{font-size:17px;font-weight:700;letter-spacing:.02em;margin:0}
+.today-label{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.top-right{display:flex;align-items:center;gap:6px;flex:none}
+.top-right .btn.sm{padding:6px 10px;font-size:13px;min-height:40px}
+@media (max-width:420px){ .today-label{display:none} }
+
+.toggle-row{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  appearance:none;background:var(--card);border:1px solid var(--line-strong);
+  border-radius:10px;padding:12px;min-height:54px;margin-top:8px;cursor:pointer;text-align:left;
+}
+.toggle-row:first-of-type{margin-top:0}
+.toggle-label{font-size:15px}
+.toggle-state{
+  flex:none;font-size:13px;font-weight:700;color:var(--muted);
+  border:1px solid var(--line-strong);border-radius:999px;padding:4px 14px;
+}
+.toggle-row[aria-pressed="true"]{border-color:var(--exam);background:var(--exam-soft)}
+.toggle-row[aria-pressed="true"] .toggle-state{color:var(--exam);border-color:var(--exam)}
+.toggle-row:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.banner{
+  margin-top:8px;padding:8px 10px;border-radius:8px;
+  background:var(--warn-soft);color:var(--ink);font-size:13px;line-height:1.5;
+  border:1px solid var(--line);
+}
+
+/* ---------- main ---------- */
+main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
+.stack{display:flex;flex-direction:column;gap:10px}
+
+.section-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin:18px 2px 8px;
+}
+.section-head:first-child{margin-top:2px}
+.section-title{font-size:14px;font-weight:700;margin:0}
+.section-count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.section-title.danger,.section-count.danger{color:var(--treat)}
+
+/* ---------- record card ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);
+  border-left:5px solid var(--line-strong);
+  border-radius:10px;padding:12px 13px;
+  width:100%;text-align:left;display:block;cursor:pointer;
+}
+.card.t{border-left-color:var(--treat)}
+.card.e{border-left-color:var(--exam)}
+.card.done{border-left-color:var(--line-strong);opacity:.72}
+.card.late{border-left-color:var(--treat);background:var(--treat-soft)}
+.card.st-preg{border-left-color:var(--exam)}
+.card.st-wait{border-left-color:var(--treat)}
+.card.st-cont{border-left-color:var(--cont)}
+.card.st-none{border-left-color:var(--line-strong)}
+.card:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+.horse{font-size:21px;font-weight:700;line-height:1.25;letter-spacing:.01em;word-break:break-word}
+.place{font-size:13px;color:var(--muted);margin-left:8px;font-weight:400}
+.hcat{
+  font-size:12px;font-weight:700;margin-left:8px;vertical-align:middle;
+  display:inline-block;border:1px solid var(--line-strong);border-radius:999px;
+  padding:1px 9px;color:var(--muted);background:var(--paper);white-space:nowrap;
+}
+.line{margin-top:5px;font-size:14px;word-break:break-word}
+.line.sub{color:var(--muted);font-size:13px}
+.meta{
+  margin-top:8px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;
+  font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.chip{
+  display:inline-block;padding:2px 8px;border-radius:999px;
+  font-size:12px;font-weight:700;line-height:1.7;
+}
+.chip.t{background:var(--treat-soft);color:var(--treat)}
+.chip.e{background:var(--exam-soft);color:var(--exam)}
+.chip.w{background:var(--warn-soft);color:var(--warn)}
+.chip.n{background:var(--paper);color:var(--muted)}
+.chip.b{background:var(--cont-soft);color:var(--cont)}
+
+.empty{
+  border:1px dashed var(--line-strong);border-radius:10px;
+  padding:18px 14px;text-align:center;color:var(--muted);font-size:14px;
+}
+
+/* ---------- buttons ---------- */
+.btn{
+  appearance:none;border:1px solid var(--line-strong);background:var(--card);
+  border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;
+  cursor:pointer;min-height:48px;
+}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.btn.fill{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.t{background:var(--treat);border-color:var(--treat);color:#fff}
+.btn.e{background:var(--exam);border-color:var(--exam);color:#fff}
+.btn.wide{width:100%}
+.btn.sm{min-height:40px;padding:8px 12px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-row>.btn{flex:1 1 auto}
+
+.newbar{display:flex;gap:8px;margin-bottom:4px}
+
+/* ---------- filter ---------- */
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:10px}
+.filters button{
+  appearance:none;white-space:nowrap;border:1px solid var(--line-strong);
+  background:var(--card);border-radius:999px;padding:8px 14px;font-size:14px;
+  min-height:40px;cursor:pointer;
+}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:700}
+
+.seg{display:flex;gap:6px}
+.seg button{
+  flex:1;appearance:none;border:1px solid var(--line-strong);background:var(--paper);
+  border-radius:9px;padding:10px 6px;font-size:14px;min-height:48px;cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:700}
+.seg button:disabled{opacity:.45}
+.seg button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+.rows{margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:5px 10px;align-items:baseline}
+.row-label{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.row-value{font-size:14px;word-break:break-word;font-variant-numeric:tabular-nums}
+.row-value strong{font-weight:700;font-size:15px}
+
+.preview{display:block}
+.prow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line)}
+.prow:first-child{border-top:none}
+.prow-label{font-size:13px;color:var(--muted)}
+.prow-date{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.prow-empty{font-size:13px;color:var(--muted)}
+
+/* 左右の卵胞を並べて選ぶ */
+.ovaries{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;align-items:start}
+.ovary{
+  border:1px solid var(--line-strong);border-radius:12px;
+  padding:8px;background:var(--card);min-width:0;
+}
+.ovary-toggle{
+  width:100%;appearance:none;cursor:pointer;padding:6px 4px;
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:10px;
+  min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  margin-bottom:8px;
+}
+.ot-title{font-size:14px;font-weight:700;color:var(--ink)}
+.ot-val{
+  font-size:16px;font-weight:700;color:var(--exam);
+  font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px;
+}
+.ot-val.ot-empty{color:var(--muted);font-weight:400}
+.ot-arrow{font-size:12px;line-height:1;display:inline-block}
+.ovary-toggle[aria-expanded="true"] .ot-arrow{transform:rotate(180deg)}
+.ovary-toggle:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.cl-btn{
+  width:100%;appearance:none;cursor:pointer;
+  border:2px solid var(--treat);background:var(--card);color:var(--treat);
+  border-radius:10px;min-height:56px;font-size:17px;font-weight:700;
+  margin-bottom:8px;padding:0;
+}
+.cl-btn[aria-pressed="true"]{background:var(--treat);color:#fff}
+.cl-btn:focus-visible,.size-btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.sizes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.sizes[hidden]{display:none}
+.size-btn{
+  appearance:none;cursor:pointer;padding:0;
+  border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);
+  border-radius:9px;min-height:54px;font-size:16px;line-height:1.1;
+  font-variant-numeric:tabular-nums;
+}
+.size-btn[aria-pressed="true"]{
+  background:var(--exam);border-color:var(--exam);color:#fff;font-weight:700;
+}
+.ovary-note{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
+
+.sched-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sched-row>div:first-child{min-width:0}
+.sched-row>h3{margin:0}
+
+.tally{display:flex;gap:8px;margin-bottom:10px}
+.tally>div{
+  flex:1;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:8px 6px;text-align:center;
+}
+.tally .n{display:block;font-size:22px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.tally .l{display:block;font-size:12px;color:var(--muted)}
+
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cal-title{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.cal-nav{
+  appearance:none;border:1px solid var(--line-strong);background:var(--card);
+  border-radius:10px;min-width:52px;min-height:44px;font-size:20px;line-height:1;cursor:pointer;
+}
+.cal-nav:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:16px}
+.cal-wd{text-align:center;font-size:11px;color:var(--muted);padding:2px 0}
+.cal-wd.sun{color:var(--treat)}
+.cal-wd.sat{color:var(--exam)}
+.cal-pad{min-height:48px}
+.cal-cell{
+  appearance:none;border:1px solid var(--line);background:var(--card);
+  border-radius:8px;min-height:48px;padding:3px 0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+}
+.cal-d{font-size:13px;line-height:1.1;font-variant-numeric:tabular-nums}
+.cal-n{font-size:12px;font-weight:700;line-height:1.1;min-height:14px;color:var(--exam)}
+.cal-cell.has{background:var(--exam-soft);border-color:var(--exam)}
+.cal-cell.late{background:var(--warn-soft);border-color:var(--warn)}
+.cal-cell.late .cal-n{color:var(--warn)}
+.cal-cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
+.cal-cell.sel{background:var(--ink);border-color:var(--ink)}
+.cal-cell.sel .cal-d,.cal-cell.sel .cal-n{color:var(--paper)}
+.cal-cell:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.cal-legend{display:flex;flex-wrap:wrap;gap:8px;margin:-8px 0 14px;font-size:12px;color:var(--muted)}
+.cal-foal{display:block;width:6px;height:6px;border-radius:50%;background:var(--treat)}
+.cal-cell.sel .cal-foal{background:var(--paper)}
+
+/* ---------- tabs ---------- */
+.tabs{
+  flex:none;display:flex;background:var(--card);border-top:1px solid var(--line);
+}
+.tabs button{
+  flex:1;appearance:none;background:none;border:none;cursor:pointer;
+  padding:9px 2px 11px;font-size:11.5px;font-weight:700;color:var(--muted);
+  border-top:3px solid transparent;min-height:56px;line-height:1.25;
+  word-break:keep-all;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);border-top-color:var(--ink)}
+.tabs .tab-n{display:block;font-size:18px;line-height:1.2;font-variant-numeric:tabular-nums}
+
+/* ---------- sheet ---------- */
+.sheet{position:fixed;inset:0;z-index:40;display:none}
+.sheet.open{display:block}
+.sheet-back{position:absolute;inset:0;background:rgba(6,14,11,.55)}
+.sheet-panel{
+  position:absolute;left:0;right:0;bottom:0;max-height:94%;
+  display:flex;flex-direction:column;
+  background:var(--paper);border-radius:16px 16px 0 0;
+  border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+.sheet-head{
+  flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 14px 10px;border-bottom:1px solid var(--line);
+}
+.sheet-head h2{margin:0;font-size:16px;font-weight:700}
+.sheet-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sheet-foot{flex:none;padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px}
+.sheet-foot>.btn{flex:1}
+
+.field{display:block}
+.field-label{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.field-hint{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--card);border:1px solid var(--line-strong);
+  border-radius:9px;padding:11px 12px;min-height:48px;
+}
+.field textarea{min-height:84px;resize:vertical;line-height:1.55}
+.field input:focus,.field select:focus,.field textarea:focus{outline:3px solid var(--ink);outline-offset:1px}
+
+.detail-block{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.detail-block h3{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.log{padding:9px 0;border-top:1px solid var(--line)}
+.log:first-of-type{border-top:none}
+.log-meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.log-text{margin-top:2px;white-space:pre-wrap;word-break:break-word}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(76px + env(safe-area-inset-bottom, 0px));
+  background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;
+  font-size:14px;font-weight:700;z-index:60;max-width:90%;text-align:center;
+}
+@media (prefers-reduced-motion:no-preference){
+  .sheet.open .sheet-panel{animation:rise .18s ease-out}
+  @keyframes rise{from{transform:translateY(14px)}to{transform:none}}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <h1 class="brand">治療・直検ボード</h1>
+    <div class="top-right">
+      <span class="today-label" id="todayLabel"></span>
+      <button class="btn sm" id="langBtn">日本語</button>
+      <button class="btn sm" id="whoBtn">名前</button>
+      <button class="btn sm" id="settingsBtn">設定</button>
+    </div>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+</header>
+
+<main id="view"><div class="empty">読み込んでいます…</div></main>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button role="tab" data-tab="today" aria-selected="true"><span class="tab-n" id="n-today">—</span>今日の直検</button>
+  <button role="tab" data-tab="todaytreat" aria-selected="false"><span class="tab-n" id="n-todaytreat">—</span>今日の治療</button>
+  <button role="tab" data-tab="treat" aria-selected="false"><span class="tab-n" id="n-treat">—</span>治療</button>
+  <button role="tab" data-tab="exam" aria-selected="false"><span class="tab-n" id="n-exam">—</span>直検</button>
+  <button role="tab" data-tab="cal" aria-selected="false"><span class="tab-n" id="n-cal">—</span>予定表</button>
+</nav>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-back" data-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head">
+      <h2 id="sheetTitle"></h2>
+      <button class="btn sm" data-close>閉じる</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="sheet-foot" id="sheetFoot"></div>
+  </div>
+</div>
+
+<datalist id="horseNames"></datalist>
+<datalist id="stallionNames"></datalist>
+
+<script>
+/* 牧場コードはURLの ?farm= から受け取る */
+var FARM_CODE = (function(){
+  try{
+    var p = new URLSearchParams(location.search);
+    return (p.get("farm") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32);
+  }catch(e){ return ""; }
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var FARM = (typeof FARM_CODE === "string") ? FARM_CODE : "";
+/* ============ 言語（日本語 / English / हिन्दी） ============ */
+var LANG = "ja";
+try{ LANG = localStorage.getItem("board.lang") || "ja"; }catch(e){}
+function setLang(v){
+  LANG = v;
+  try{ localStorage.setItem("board.lang", v); }catch(e){}
+}
+var LANG_NAMES = { ja:"日本語", en:"English", hi:"हिन्दी" };
+
+var DICT = {
+en: {
+/* --- 分類・語彙（記録として保存される言葉。表示だけ訳す） --- */
+"直検":"Rectal exam","妊娠鑑定":"Pregnancy check","その他処置":"Other care",
+"治療中":"Under treatment","経過観察":"Monitoring","終了":"Finished",
+"受胎":"Pregnant","直検継続":"Still checking","妊娠鑑定待ち":"Waiting for check","未設定":"Not set",
+"妊娠確認":"Pregnant","不受胎":"Not pregnant","双子":"Twins",
+"吸収・流産":"Lost / aborted","要再検":"Recheck needed","その他":"Other",
+"異常なし":"Normal","卵胞確認":"Follicle seen","子宮内貯留あり":"Fluid in uterus","種付可":"Ready to breed",
+"実施":"Done","中止":"Cancelled","すべて":"All",
+"種付後15日":"Day 15 after breeding","種付後18日":"Day 18 after breeding",
+"3週":"Week 3","4週":"Week 4","5週":"Week 5",
+"次の直検（手入力）":"Next exam (entered by hand)",
+"分娩後{n}日":"Day {n} after foaling",
+
+/* --- タブ・見出し --- */
+"治療・直検ボード":"Treatment & Exam Board",
+"今日":"Today","治療":"Treatment","予定表":"Calendar",
+"今日の直検":"Exams today","今日の治療":"Care today",
+"名前":"Name","設定":"Settings","言語":"Language",
+"今週":"This week","全頭":"All mares",
+"期限すぎ":"Overdue",
+"今日の直検":"Rectal exams today","今週の直検":"Rectal exams this week",
+"今日の妊娠鑑定":"Pregnancy checks today","今週の妊娠鑑定":"Pregnancy checks this week",
+"今日のその他処置":"Other care today","今週のその他処置":"Other care this week",
+"今日":"Today","今週":"This week",
+"治療中の馬":"Horses under treatment",
+"次の直検":"Next exam","分娩予定":"Due to foal",
+
+/* --- 一覧・カード --- */
+"（馬名なし）":"(no name)",
+"予定なし":"None scheduled","なし":"None","未入力":"Not entered",
+"種付日が未入力":"Breeding date not entered","日付が未入力":"No dates entered",
+"本日":"Today","明日":"Tomorrow","{n}日後":"in {n} days","{n}日超過":"{n} days overdue",
+"あと{n}日":"{n} days to go","{n}日経過":"{n} days past",
+"本日未記録":"Not recorded today","本日記録済":"Recorded today","実施済":"Done",
+"手入力":"By hand","記録済":"Recorded","記録者不明":"Recorder unknown",
+"分娩 {d}":"Foaled {d}","種付 {d}":"Bred {d}","開始 {d}":"Started {d}","最終処置 {d}":"Last care {d}",
+"登録 {name}":"Added by {name}","結果：{r}":"Result: {r}",
+"{d}（種付から{n}日）":"{d} ({n} days from breeding)",
+"{n}頭":"{n} horses","{n}件":"{n} items",
+
+/* --- 空のとき --- */
+"読み込んでいます…":"Loading…",
+"今日やる直検はありません。":"Nothing to check today.",
+"今週の予定はありません。":"Nothing scheduled this week.",
+"治療中の馬はいません。":"No horses under treatment.",
+"該当する馬はいません。":"No horses match.",
+"この分類に入る馬はいません。":"No horses in this group.",
+"この日の予定はありません。":"Nothing scheduled that day.",
+"まだ登録がありません。分娩日か種付日を入れると、予定日が自動で出ます。":"Nothing registered yet. Enter a foaling or breeding date and the schedule appears automatically.",
+"まだ記録がありません。":"No records yet.",
+"予定はありません。分娩日か種付日を入れてください。":"Nothing scheduled. Enter a foaling or breeding date.",
+
+/* --- 治療 --- */
+"治療を登録":"Add a treatment","治療の内容を編集":"Edit treatment",
+"症状・診断":"Signs / diagnosis","処置内容":"What to do","開始日":"Start date","状態":"Status",
+"状態を変える":"Change status",
+"処置を記録":"Record care","{horse}の処置を記録":"Record care for {horse}",
+"実施日":"Date done","実施した内容・馬の様子":"What you did and how the horse looked",
+"処置の記録（{n}件）":"Care records ({n})",
+"この記録を削除":"Delete this record","もう一度押すと削除します":"Press again to delete",
+"誰が見ても同じ処置ができるように書いてください":"Write it so anyone can do the same care",
+"例：左前肢 蜂窩織炎":"e.g. Left fore limb cellulitis",
+"例：セファゾリン 朝夕2回、患部冷却15分、運動制限":"e.g. Cefazolin twice daily, cold hosing 15 min, box rest",
+"例：抗生剤投与、患部の腫れ軽減、歩様やや改善":"e.g. Antibiotic given, swelling down, gait slightly better",
+
+/* --- 繁殖 --- */
+"繁殖牝馬を登録":"Add a mare","繁殖情報を編集":"Edit mare",
+"馬名":"Horse name","場所":"Location","メモ":"Notes",
+"分娩日":"Foaling date","種付日":"Breeding date",
+"基準の日付":"Key dates","これからの予定":"Upcoming",
+"自動で出る予定日":"Dates calculated for you",
+"分娩日か種付日を入れると、予定日がここに出ます。":"Enter a foaling or breeding date and the dates appear here.",
+"分娩後{n}日の直検日が出ます":"Gives the exam date {n} days after foaling",
+"空欄でOK。直検で決まってから入れられます":"Can be left blank. Enter it once the exam decides it.",
+"この日から{steps}の鑑定日が出ます":"Gives the check dates: {steps}",
+"種付日（この直検で種付が決まったら）":"Breeding date (if bred at this exam)",
+"空欄でかまいません。入れるとその日から{steps}の鑑定日が出ます":"May be left blank. If entered, the check dates follow: {steps}",
+"{horse}の種付日":"Breeding date for {horse}",
+"妊娠鑑定の予定日":"Pregnancy check dates",
+"種付日を入力":"Enter breeding date","種付日を変更":"Change breeding date",
+"種付日を登録しました":"Breeding date saved","種付日を入れてください":"Enter a breeding date",
+"今の種付日は {d} です。日付を変えると、新しい日を基準に鑑定日を引き直します。前の記録は履歴に残ります。":"The current breeding date is {d}. Changing it recalculates the check dates from the new date. Past records stay in the history.",
+"実施を記録":"Record result","実施済にする":"Mark as done",
+"結果":"Result","所見・申し送り":"Findings / handover",
+"例：単胎、左子宮角。次回4週で再検":"e.g. Single, left horn. Recheck at week 4.",
+"例：ブルーローズ":"e.g. Blue Rose","例：1号厩舎 / 3放牧地":"e.g. Barn 1 / Paddock 3",
+"例：前回 右卵巣に35mm卵胞":"e.g. Last time 35mm follicle on right ovary",
+"実施した記録（{n}件）":"Recorded ({n})","取り消す":"Undo","取り消しました":"Undone","直す":"Correct",
+"日付を編集":"Edit dates",
+"次の直検日":"Next exam date","次の直検日を手入力":"Enter next exam date",
+"次の直検日（手入力）":"Next exam date (by hand)","その直検の内容":"What that exam is for",
+"入れるとこの日が「次の直検」になります。空欄なら計算どおり":"If entered, this becomes the next exam. Leave blank to follow the calculation.",
+"計算した日付より、この日が優先して「次の直検」に出ます":"This date takes priority over the calculated one",
+"内容":"What for","申し送りがあれば":"Handover, if any","補足があれば":"Extra notes, if any",
+"手入力を消す":"Remove hand entry","手入力の予定を消しました":"Hand-entered date removed",
+"その他処置を追加":"Add other care","{horse}のその他処置":"Other care for {horse}",
+"予定日":"Planned date","例：ワクチン、削蹄、駆虫":"e.g. Vaccine, trimming, deworming",
+"内容を入力してください":"Enter what it is for",
+
+/* --- カレンダー --- */
+"前の月":"Previous month","次の月":"Next month",
+"数字＝その日に見る頭数":"Number = horses to see that day",
+"✓＝記録済み":"✓ = all recorded","色つき＝未記録あり":"Coloured = something not recorded",
+"●＝分娩予定":"● = due to foal",
+
+/* --- 設定 --- */
+"予定の設定":"Schedule settings",
+"分娩後の初回直検":"First exam after foaling",
+"分娩日から何日目に直検するか。既定は8日です":"How many days after foaling to examine. Default is 8.",
+"妊娠期間":"Length of pregnancy",
+"種付日から何日目を分娩予定日にするか。既定は340日です":"How many days after breeding the mare is due. Default is 340.",
+"妊娠鑑定でつくる予定":"Pregnancy checks to schedule",
+"{label}（種付後{n}日）":"{label} (day {n} after breeding)",
+"使う":"Use","使わない":"Skip",
+"チェックを外した項目は、これから先の予定に出なくなります。すでに記録した結果は履歴に残ります。この設定はこのボードを見る全員に共通です。":"Items switched off no longer appear in future schedules. Results already recorded stay in the history. This setting applies to everyone using this board.",
+"設定を保存しました":"Settings saved",
+"（妊娠鑑定の項目はすべて外れています）":"(all pregnancy checks are switched off)",
+
+/* --- 合言葉 --- */
+"合言葉":"Passcode","新しい合言葉":"New passcode","合言葉を保存する":"Save passcode",
+"合言葉を入れてください":"Enter the passcode","合言葉が違います":"Wrong passcode",
+"合言葉が変わった可能性があります。":"The passcode may have changed.",
+"この牧場のボードは合言葉で守られています。牧場の方にお聞きください":"This board is protected by a passcode. Ask the farm.",
+"空欄のまま保存すると、合言葉なし（URLを知っていれば誰でも開ける）に戻ります":"Saving it blank removes the passcode, so anyone with the URL can open the board.",
+"合言葉を決めると、URLを知っていてもこれを知らない人はボードを開けません。":"With a passcode set, knowing the URL is not enough to open the board.",
+"変更したときは、従業員の方に新しい合言葉を伝えてください。次に開いたときに聞かれます。":"If you change it, tell the staff the new passcode. They will be asked for it next time.",
+"合言葉を設定しました":"Passcode set","合言葉を解除しました":"Passcode removed",
+"開く":"Open","確認しています…":"Checking…","確認できませんでした":"Could not check",
+
+/* --- 年度 --- */
+"年度の管理":"Season","年度の名前":"Name of the season",
+"保存するファイルの名前に使います":"Used in the name of the saved file",
+"馬名と場所を引き継ぐ":"Keep horse names and locations",
+"引き継ぐ":"Keep","引き継がない":"Do not keep",
+"「保存する」は今の記録をコピーして別ファイルに残します。アプリのデータはそのままです。":"\"Save\" copies the current records into a separate file. The app keeps its data.",
+"「新しいシーズンを始める」は、保存したうえで分娩日・種付日・直検の記録を消します。治療の記録は消えません。":"\"Start a new season\" saves first, then clears foaling dates, breeding dates and exam records. Treatment records are kept.",
+"今の記録を保存する":"Save the current records","保存しています…":"Saving…",
+"保存しました：":"Saved: ","保存したファイル":"the saved file",
+"新しいシーズンを始める":"Start a new season","もう一度押すと切り替えます":"Press again to start",
+"切り替えています…":"Starting…","新しいシーズンを始めました":"New season started",
+"切り替えできませんでした":"Could not start","前の記録はこちらに残しました：":"Previous records saved to: ",
+
+/* --- 名前・接続 --- */
+"あなたの名前":"Your name","名前を入れてください":"Enter your name",
+"記録した人として残ります。この端末にだけ保存され、他の人の端末には影響しません":"Kept as the person who recorded it. Stored on this phone only.",
+"例：佐藤":"e.g. Sato",
+"牧場が指定されていません":"No farm specified",
+"このボードは牧場ごとのURLで開きます。お手元のURLの末尾に ?farm= で始まる牧場コードが付いているか確認してください。":"This board opens through a farm-specific URL. Check that your URL ends with ?farm= and a farm code.",
+"分からない場合は、URLを配った方にお問い合わせください。":"If unsure, ask the person who sent you the URL.",
+"サーバーに接続できません":"Cannot reach the server",
+"サーバーに接続できません。電波の入る場所で画面を開き直してください。":"Cannot reach the server. Move to where there is signal and reopen the page.",
+"データを読み込めませんでした。電波の入る場所で「更新」を押してください。":"Could not load the data. Move to where there is signal and reload.",
+"サーバーに接続できないため設定を開けません":"Cannot open settings without a connection",
+"このアカウントでは変更できません":"You cannot change this",
+
+/* --- 共通ボタン --- */
+"保存":"Save","やめる":"Cancel","閉じる":"Close","編集":"Edit",
+"記録する":"Record","追加する":"Add","追加しました":"Added",
+"保存しました":"Saved","登録しました":"Added","記録しました":"Recorded",
+"削除しました":"Deleted","{s}にしました":"Changed to {s}",
+"馬名を入力してください":"Enter the horse name","日付を入れてください":"Enter a date",
+"保存できませんでした":"Could not save",
+"保存できませんでした。電波の入る場所でもう一度お試しください":"Could not save. Try again where there is signal.",
+"（未記入）":"(not written)",
+"区分":"Category","未選択":"Not chosen","上がり":"Retired","不受胎馬":"Barren","子付き":"With foal",
+"変更":"Change","選ぶ":"Choose","これ":"Selected","{horse}の区分":"Category for {horse}",
+"まだ選んでいません。":"Not chosen yet.","馬名の横に表示されます。":"Shown next to the horse's name.",
+"個体メモ":"About this mare","書く":"Write","まだ記入がありません。":"Nothing written yet.",
+"{horse}の個体メモ":"Notes on {horse}",
+"気性や持病など、この馬について残しておきたいこと":"Temperament, old injuries, anything worth remembering",
+"例：気性が激しい。左後肢に古い傷":"e.g. Sharp temperament. Old scar on left hind.",
+"この馬を削除":"Delete this mare","削除しています…":"Deleting…","この馬の直検・妊娠鑑定の記録もすべて消えます。元に戻せません。間違えて登録したときだけお使いください。":"All rectal exam and pregnancy check records for this mare are deleted too. This cannot be undone. Use it only for a mare entered by mistake.",
+"この回は飛ばす":"Skip this one","未実施":"Not done","飛ばしました":"Skipped",
+"都合で実施しなかったときに押します。予定一覧から外れ、記録には「未実施」として残ります。あとで取り消せます。":"Press this if it was not carried out. It leaves the schedule and stays in the history as Not done. You can undo it later.",
+"左卵胞":"Left","右卵胞":"Right","黄体":"CL",
+"左卵胞・右卵胞を押すと大きさを選べます（単位はcm）":"Tap Left or Right to choose the size (cm)",
+"左{v}cm":"L {v}cm","右{v}cm":"R {v}cm",
+"左":"Left","右":"Right","両側":"Both",
+"例：子宮に浮腫あり。2日後に再検":"e.g. Uterine oedema. Recheck in 2 days.",
+"種牡馬":"Stallion","種牡馬 {s}":"Stallion: {s}","例：キングカメハメハ":"e.g. King Kamehameha",
+"分娩予定（受胎した場合）":"Due date (if pregnant)",
+"{horse}の次の直検日":"Next exam date for {horse}",
+"例：卵胞確認、再検":"e.g. Follicle check, recheck",
+"例：卵胞確認、再検、子宮洗浄後":"e.g. Follicle check, recheck, after uterine flush",
+"例：2026":"e.g. 2026",
+"{y}年{m}月":"{m} {y}"
+},
+
+hi: {
+"直検":"रेक्टल जाँच","妊娠鑑定":"गर्भ जाँच","その他処置":"अन्य देखभाल",
+"治療中":"इलाज चल रहा है","経過観察":"निगरानी","終了":"समाप्त",
+"受胎":"गर्भवती","直検継続":"जाँच जारी","妊娠鑑定待ち":"जाँच का इंतज़ार","未設定":"तय नहीं",
+"妊娠確認":"गर्भ पुष्ट","不受胎":"गर्भ नहीं","双子":"जुड़वाँ",
+"吸収・流産":"गर्भपात","要再検":"दोबारा जाँच","その他":"अन्य",
+"異常なし":"सामान्य","卵胞確認":"फॉलिकल दिखा","子宮内貯留あり":"गर्भाशय में तरल","種付可":"ब्रीडिंग के लिए तैयार",
+"実施":"हो गया","中止":"रद्द","すべて":"सभी",
+"種付後15日":"ब्रीडिंग के 15 दिन बाद","種付後18日":"ब्रीडिंग के 18 दिन बाद",
+"3週":"सप्ताह 3","4週":"सप्ताह 4","5週":"सप्ताह 5",
+"次の直検（手入力）":"अगली जाँच (हाथ से)",
+"分娩後{n}日":"ब्याने के {n} दिन बाद",
+
+"治療・直検ボード":"इलाज और जाँच बोर्ड",
+"今日":"आज","治療":"इलाज","予定表":"कैलेंडर",
+"今日の直検":"आज की जाँच","今日の治療":"आज की देखभाल",
+"名前":"नाम","設定":"सेटिंग","言語":"भाषा",
+"今週":"इस सप्ताह","全頭":"सभी घोड़ी",
+"期限すぎ":"समय निकल गया",
+"今日の直検":"आज की रेक्टल जाँच","今週の直検":"इस सप्ताह की रेक्टल जाँच",
+"今日の妊娠鑑定":"आज की गर्भ जाँच","今週の妊娠鑑定":"इस सप्ताह की गर्भ जाँच",
+"今日のその他処置":"आज की अन्य देखभाल","今週のその他処置":"इस सप्ताह की अन्य देखभाल",
+"治療中の馬":"इलाज वाले घोड़े",
+"次の直検":"अगली जाँच","分娩予定":"ब्याने की तारीख",
+
+"（馬名なし）":"(नाम नहीं)",
+"予定なし":"कुछ तय नहीं","なし":"कुछ नहीं","未入力":"दर्ज नहीं",
+"種付日が未入力":"ब्रीडिंग तारीख दर्ज नहीं","日付が未入力":"कोई तारीख दर्ज नहीं",
+"本日":"आज","明日":"कल","{n}日後":"{n} दिन बाद","{n}日超過":"{n} दिन देर",
+"あと{n}日":"{n} दिन बाकी","{n}日経過":"{n} दिन बीते",
+"本日未記録":"आज दर्ज नहीं","本日記録済":"आज दर्ज हुआ","実施済":"हो गया",
+"手入力":"हाथ से","記録済":"दर्ज","記録者不明":"दर्ज करने वाला अज्ञात",
+"分娩 {d}":"ब्याई {d}","種付 {d}":"ब्रीडिंग {d}","開始 {d}":"शुरू {d}","最終処置 {d}":"आखिरी देखभाल {d}",
+"登録 {name}":"दर्ज किया {name}","結果：{r}":"नतीजा: {r}",
+"{d}（種付から{n}日）":"{d} (ब्रीडिंग से {n} दिन)",
+"{n}頭":"{n} घोड़े","{n}件":"{n} काम",
+
+"読み込んでいます…":"लोड हो रहा है…",
+"今日やる直検はありません。":"आज कोई जाँच नहीं है।",
+"今週の予定はありません。":"इस सप्ताह कुछ तय नहीं है।",
+"治療中の馬はいません。":"इलाज वाला कोई घोड़ा नहीं है।",
+"該当する馬はいません。":"कोई घोड़ा नहीं मिला।",
+"この分類に入る馬はいません。":"इस श्रेणी में कोई घोड़ा नहीं है।",
+"この日の予定はありません。":"उस दिन कुछ तय नहीं है।",
+"まだ登録がありません。分娩日か種付日を入れると、予定日が自動で出ます。":"अभी कुछ दर्ज नहीं है। ब्याने या ब्रीडिंग की तारीख डालें, तारीखें अपने आप बन जाएँगी।",
+"まだ記録がありません。":"अभी कोई रिकॉर्ड नहीं है।",
+"予定はありません。分娩日か種付日を入れてください。":"कुछ तय नहीं है। ब्याने या ब्रीडिंग की तारीख डालें।",
+
+"治療を登録":"नया इलाज जोड़ें","治療の内容を編集":"इलाज बदलें",
+"症状・診断":"लक्षण / निदान","処置内容":"क्या करना है","開始日":"शुरू होने की तारीख","状態":"स्थिति",
+"状態を変える":"स्थिति बदलें",
+"処置を記録":"देखभाल दर्ज करें","{horse}の処置を記録":"{horse} की देखभाल दर्ज करें",
+"実施日":"किस दिन किया","実施した内容・馬の様子":"क्या किया और घोड़ा कैसा था",
+"処置の記録（{n}件）":"देखभाल के रिकॉर्ड ({n})",
+"この記録を削除":"यह रिकॉर्ड हटाएँ","もう一度押すと削除します":"हटाने के लिए फिर दबाएँ",
+"誰が見ても同じ処置ができるように書いてください":"ऐसा लिखें कि कोई भी वही देखभाल कर सके",
+"例：左前肢 蜂窩織炎":"उदा. बाएँ अगले पैर में सेल्युलाइटिस",
+"例：セファゾリン 朝夕2回、患部冷却15分、運動制限":"उदा. सेफाज़ोलिन दिन में दो बार, 15 मिनट ठंडा पानी, आराम",
+"例：抗生剤投与、患部の腫れ軽減、歩様やや改善":"उदा. एंटीबायोटिक दिया, सूजन कम, चाल थोड़ी बेहतर",
+
+"繁殖牝馬を登録":"घोड़ी जोड़ें","繁殖情報を編集":"घोड़ी की जानकारी बदलें",
+"馬名":"घोड़ी का नाम","場所":"जगह","メモ":"नोट",
+"分娩日":"ब्याने की तारीख","種付日":"ब्रीडिंग की तारीख",
+"基準の日付":"मुख्य तारीखें","これからの予定":"आगे की योजना",
+"自動で出る予定日":"अपने आप बनी तारीखें",
+"分娩日か種付日を入れると、予定日がここに出ます。":"ब्याने या ब्रीडिंग की तारीख डालें, तारीखें यहाँ दिखेंगी।",
+"分娩後{n}日の直検日が出ます":"ब्याने के {n} दिन बाद की जाँच तारीख बनेगी",
+"空欄でOK。直検で決まってから入れられます":"खाली छोड़ सकते हैं। जाँच के बाद डाल सकते हैं।",
+"この日から{steps}の鑑定日が出ます":"इस दिन से जाँच तारीखें: {steps}",
+"種付日（この直検で種付が決まったら）":"ब्रीडिंग की तारीख (अगर इसी जाँच में तय हुई)",
+"空欄でかまいません。入れるとその日から{steps}の鑑定日が出ます":"खाली छोड़ सकते हैं। डालने पर जाँच तारीखें बनेंगी: {steps}",
+"{horse}の種付日":"{horse} की ब्रीडिंग तारीख",
+"妊娠鑑定の予定日":"गर्भ जाँच की तारीखें",
+"種付日を入力":"ब्रीडिंग तारीख डालें","種付日を変更":"ब्रीडिंग तारीख बदलें",
+"種付日を登録しました":"ब्रीडिंग तारीख सेव हुई","種付日を入れてください":"ब्रीडिंग तारीख डालें",
+"今の種付日は {d} です。日付を変えると、新しい日を基準に鑑定日を引き直します。前の記録は履歴に残ります。":"अभी ब्रीडिंग तारीख {d} है। बदलने पर जाँच तारीखें नई तारीख से बनेंगी। पुराने रिकॉर्ड इतिहास में रहेंगे।",
+"実施を記録":"नतीजा दर्ज करें","実施済にする":"पूरा हुआ चिह्नित करें",
+"結果":"नतीजा","所見・申し送り":"टिप्पणी / आगे के लिए",
+"例：単胎、左子宮角。次回4週で再検":"उदा. एक बच्चा, बायाँ हॉर्न। सप्ताह 4 में दोबारा जाँच।",
+"例：ブルーローズ":"उदा. ब्लू रोज़","例：1号厩舎 / 3放牧地":"उदा. अस्तबल 1 / मैदान 3",
+"例：前回 右卵巣に35mm卵胞":"उदा. पिछली बार दाएँ अंडाशय में 35mm फॉलिकल",
+"実施した記録（{n}件）":"दर्ज रिकॉर्ड ({n})","取り消す":"वापस लें","取り消しました":"वापस लिया","直す":"सुधारें",
+"日付を編集":"तारीखें बदलें",
+"次の直検日":"अगली जाँच की तारीख","次の直検日を手入力":"अगली जाँच तारीख हाथ से डालें",
+"次の直検日（手入力）":"अगली जाँच तारीख (हाथ से)","その直検の内容":"वह जाँच किसलिए",
+"入れるとこの日が「次の直検」になります。空欄なら計算どおり":"डालने पर यही अगली जाँच बनेगी। खाली रखें तो गणना के अनुसार।",
+"計算した日付より、この日が優先して「次の直検」に出ます":"यह तारीख गणना की तारीख से पहले मानी जाएगी",
+"内容":"किसलिए","申し送りがあれば":"आगे के लिए कुछ हो तो","補足があれば":"कुछ और हो तो",
+"手入力を消す":"हाथ की तारीख हटाएँ","手入力の予定を消しました":"हाथ की तारीख हटा दी",
+"その他処置を追加":"अन्य देखभाल जोड़ें","{horse}のその他処置":"{horse} की अन्य देखभाल",
+"予定日":"तय तारीख","例：ワクチン、削蹄、駆虫":"उदा. टीका, खुर कटाई, कृमिनाशक",
+"内容を入力してください":"किसलिए है, लिखें",
+
+"前の月":"पिछला महीना","次の月":"अगला महीना",
+"数字＝その日に見る頭数":"संख्या = उस दिन देखने वाले घोड़े",
+"✓＝記録済み":"✓ = सब दर्ज","色つき＝未記録あり":"रंग = कुछ दर्ज नहीं",
+"●＝分娩予定":"● = ब्याने की तारीख",
+
+"予定の設定":"योजना सेटिंग",
+"分娩後の初回直検":"ब्याने के बाद पहली जाँच",
+"分娩日から何日目に直検するか。既定は8日です":"ब्याने के कितने दिन बाद जाँच। सामान्यतः 8।",
+"妊娠期間":"गर्भ की अवधि",
+"種付日から何日目を分娩予定日にするか。既定は340日です":"ब्रीडिंग के कितने दिन बाद ब्याने की तारीख। सामान्यतः 340।",
+"妊娠鑑定でつくる予定":"गर्भ जाँच की योजना",
+"{label}（種付後{n}日）":"{label} (ब्रीडिंग के {n} दिन बाद)",
+"使う":"चालू","使わない":"बंद",
+"チェックを外した項目は、これから先の予定に出なくなります。すでに記録した結果は履歴に残ります。この設定はこのボードを見る全員に共通です。":"बंद किए गए काम आगे की योजना में नहीं दिखेंगे। पहले दर्ज नतीजे इतिहास में रहेंगे। यह सेटिंग सबके लिए एक जैसी है।",
+"設定を保存しました":"सेटिंग सेव हुई",
+"（妊娠鑑定の項目はすべて外れています）":"(सभी गर्भ जाँच बंद हैं)",
+
+"合言葉":"पासकोड","新しい合言葉":"नया पासकोड","合言葉を保存する":"पासकोड सेव करें",
+"合言葉を入れてください":"पासकोड डालें","合言葉が違います":"पासकोड गलत है",
+"合言葉が変わった可能性があります。":"शायद पासकोड बदल गया है।",
+"この牧場のボードは合言葉で守られています。牧場の方にお聞きください":"यह बोर्ड पासकोड से सुरक्षित है। फार्म से पूछें।",
+"空欄のまま保存すると、合言葉なし（URLを知っていれば誰でも開ける）に戻ります":"खाली सेव करने पर पासकोड हट जाएगा और URL वाला कोई भी खोल सकेगा।",
+"合言葉を決めると、URLを知っていてもこれを知らない人はボードを開けません。":"पासकोड लगने पर सिर्फ URL से बोर्ड नहीं खुलेगा।",
+"変更したときは、従業員の方に新しい合言葉を伝えてください。次に開いたときに聞かれます。":"बदलने पर कर्मचारियों को नया पासकोड बताएँ। अगली बार पूछा जाएगा।",
+"合言葉を設定しました":"पासकोड लग गया","合言葉を解除しました":"पासकोड हटा दिया",
+"開く":"खोलें","確認しています…":"जाँच रहे हैं…","確認できませんでした":"जाँच नहीं हो सकी",
+
+"年度の管理":"सीज़न","年度の名前":"सीज़न का नाम",
+"保存するファイルの名前に使います":"सेव फ़ाइल के नाम में इस्तेमाल होगा",
+"馬名と場所を引き継ぐ":"घोड़ी के नाम और जगह रखें",
+"引き継ぐ":"रखें","引き継がない":"न रखें",
+"「保存する」は今の記録をコピーして別ファイルに残します。アプリのデータはそのままです。":"\"सेव करें\" मौजूदा रिकॉर्ड की कॉपी अलग फ़ाइल में रखता है। ऐप का डेटा वैसा ही रहता है।",
+"「新しいシーズンを始める」は、保存したうえで分娩日・種付日・直検の記録を消します。治療の記録は消えません。":"\"नया सीज़न शुरू करें\" पहले सेव करता है, फिर ब्याने-ब्रीडिंग की तारीखें और जाँच रिकॉर्ड मिटाता है। इलाज के रिकॉर्ड रहते हैं।",
+"今の記録を保存する":"मौजूदा रिकॉर्ड सेव करें","保存しています…":"सेव हो रहा है…",
+"保存しました：":"सेव हुआ: ","保存したファイル":"सेव की गई फ़ाइल",
+"新しいシーズンを始める":"नया सीज़न शुरू करें","もう一度押すと切り替えます":"शुरू करने के लिए फिर दबाएँ",
+"切り替えています…":"शुरू हो रहा है…","新しいシーズンを始めました":"नया सीज़न शुरू हुआ",
+"切り替えできませんでした":"शुरू नहीं हो सका","前の記録はこちらに残しました：":"पुराने रिकॉर्ड यहाँ रखे: ",
+
+"あなたの名前":"आपका नाम","名前を入れてください":"अपना नाम डालें",
+"記録した人として残ります。この端末にだけ保存され、他の人の端末には影響しません":"दर्ज करने वाले के रूप में रहेगा। सिर्फ इसी फ़ोन में सेव होता है।",
+"例：佐藤":"उदा. सातो",
+"牧場が指定されていません":"फार्म तय नहीं है",
+"このボードは牧場ごとのURLで開きます。お手元のURLの末尾に ?farm= で始まる牧場コードが付いているか確認してください。":"यह बोर्ड फार्म के अपने URL से खुलता है। देखें कि आपके URL के अंत में ?farm= और फार्म कोड है या नहीं।",
+"分からない場合は、URLを配った方にお問い合わせください。":"पता न हो तो जिसने URL भेजा है उनसे पूछें।",
+"サーバーに接続できません":"सर्वर से संपर्क नहीं हो रहा",
+"サーバーに接続できません。電波の入る場所で画面を開き直してください。":"सर्वर से संपर्क नहीं हो रहा। नेटवर्क वाली जगह पर जाकर पेज दोबारा खोलें।",
+"データを読み込めませんでした。電波の入る場所で「更新」を押してください。":"डेटा लोड नहीं हुआ। नेटवर्क वाली जगह पर जाकर दोबारा लोड करें।",
+"サーバーに接続できないため設定を開けません":"संपर्क न होने से सेटिंग नहीं खुलेगी",
+"このアカウントでは変更できません":"आप इसे नहीं बदल सकते",
+
+"保存":"सेव","やめる":"रद्द","閉じる":"बंद करें","編集":"बदलें",
+"記録する":"दर्ज करें","追加する":"जोड़ें","追加しました":"जोड़ा गया",
+"保存しました":"सेव हुआ","登録しました":"जोड़ा गया","記録しました":"दर्ज हुआ",
+"削除しました":"हटा दिया","{s}にしました":"{s} कर दिया",
+"馬名を入力してください":"घोड़ी का नाम डालें","日付を入れてください":"तारीख डालें",
+"保存できませんでした":"सेव नहीं हुआ",
+"保存できませんでした。電波の入る場所でもう一度お試しください":"सेव नहीं हुआ। नेटवर्क वाली जगह पर दोबारा कोशिश करें।",
+"（未記入）":"(नहीं लिखा)",
+"区分":"श्रेणी","未選択":"नहीं चुना","上がり":"सेवानिवृत्त","不受胎馬":"खाली","子付き":"बछेड़े के साथ",
+"変更":"बदलें","選ぶ":"चुनें","これ":"चुना गया","{horse}の区分":"{horse} की श्रेणी",
+"まだ選んでいません。":"अभी तक नहीं चुना।","馬名の横に表示されます。":"घोड़ी के नाम के बगल में दिखेगा।",
+"個体メモ":"इस घोड़ी के बारे में","書く":"लिखें","まだ記入がありません。":"अभी कुछ नहीं लिखा है।",
+"{horse}の個体メモ":"{horse} के बारे में नोट",
+"気性や持病など、この馬について残しておきたいこと":"स्वभाव, पुरानी चोट, याद रखने लायक बातें",
+"例：気性が激しい。左後肢に古い傷":"उदा. तेज़ स्वभाव। बाएँ पिछले पैर पर पुराना निशान।",
+"この馬を削除":"यह घोड़ी हटाएँ","削除しています…":"हटाया जा रहा है…","この馬の直検・妊娠鑑定の記録もすべて消えます。元に戻せません。間違えて登録したときだけお使いください。":"इस घोड़ी की सभी जाँच और गर्भ जाँच के रिकॉर्ड भी हट जाएँगे। वापस नहीं लाया जा सकता। सिर्फ गलती से दर्ज की गई घोड़ी के लिए इस्तेमाल करें।",
+"この回は飛ばす":"इसे छोड़ें","未実施":"नहीं किया","飛ばしました":"छोड़ दिया",
+"都合で実施しなかったときに押します。予定一覧から外れ、記録には「未実施」として残ります。あとで取り消せます。":"अगर नहीं किया गया तो यह दबाएँ। यह योजना से हट जाएगा और रिकॉर्ड में \"नहीं किया\" रहेगा। बाद में वापस ले सकते हैं।",
+"左卵胞":"बायाँ","右卵胞":"दायाँ","黄体":"CL",
+"左卵胞・右卵胞を押すと大きさを選べます（単位はcm）":"साइज़ चुनने के लिए बायाँ/दायाँ दबाएँ (cm)",
+"左{v}cm":"बायाँ {v}cm","右{v}cm":"दायाँ {v}cm",
+"左":"बायाँ","右":"दायाँ","両側":"दोनों",
+"例：子宮に浮腫あり。2日後に再検":"उदा. गर्भाशय में सूजन। 2 दिन बाद दोबारा जाँच।",
+"種牡馬":"स्टैलियन","種牡馬 {s}":"स्टैलियन: {s}","例：キングカメハメハ":"उदा. किंग कामेहामेहा",
+"分娩予定（受胎した場合）":"ब्याने की तारीख (गर्भ होने पर)",
+"{horse}の次の直検日":"{horse} की अगली जाँच तारीख",
+"例：卵胞確認、再検":"उदा. फॉलिकल जाँच, दोबारा जाँच",
+"例：卵胞確認、再検、子宮洗浄後":"उदा. फॉलिकल जाँच, दोबारा जाँच, गर्भाशय धोने के बाद",
+"例：2026":"उदा. 2026",
+"{y}年{m}月":"{m} {y}"
+}
+};
+
+var WD_ALL = {
+  ja: ["日","月","火","水","木","金","土"],
+  en: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+  hi: ["रवि","सोम","मंगल","बुध","गुरु","शुक्र","शनि"]
+};
+var MONTHS_EN = ["January","February","March","April","May","June",
+                 "July","August","September","October","November","December"];
+var MONTHS_HI = ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून",
+                 "जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"];
+
+/** そのまま訳す */
+function tr(s){
+  if(LANG === "ja" || !s) return s;
+  var d = DICT[LANG];
+  if(!d) return s;
+  return (d[s] !== undefined) ? d[s] : s;
+}
+/** 保存されている項目名を訳す（分娩後◯日にも対応） */
+function trl(s){
+  if(LANG === "ja" || !s) return s;
+  var d = DICT[LANG];
+  if(!d) return s;
+  if(d[s] !== undefined) return d[s];
+  var m = /^分娩後(\d+)日$/.exec(s);
+  if(m) return trf("分娩後{n}日", { n: m[1] });
+  return s;
+}
+/** 差し込みのある文を訳す */
+function trf(key, vars){
+  var s = (LANG === "ja") ? key : ((DICT[LANG] && DICT[LANG][key] !== undefined) ? DICT[LANG][key] : key);
+  return s.replace(/\{(\w+)\}/g, function(_, k){
+    return (vars && vars[k] !== undefined) ? String(vars[k]) : "";
+  });
+}
+
+/** 記録に残す項目名は、言語に関係なく日本語でつくる */
+function foalLabelJa(){ return "分娩後" + foalOffset() + "日"; }
+
+/** 画面の固定文言を言語に合わせる */
+var farmNameNow = "";
+function applyStaticLang(){
+  var brand = document.querySelector(".brand");
+  if(brand) brand.textContent = farmNameNow || tr("治療・直検ボード");
+  var names = { today:"今日の直検", todaytreat:"今日の治療", treat:"治療", exam:"直検", cal:"予定表" };
+  Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function(b){
+    var n = b.querySelector(".tab-n");
+    b.textContent = "";
+    if(n) b.appendChild(n);
+    b.appendChild(document.createTextNode(tr(names[b.dataset.tab] || "")));
+  });
+  var sb = document.getElementById("settingsBtn");
+  if(sb) sb.textContent = tr("設定");
+  var lb = document.getElementById("langBtn");
+  if(lb) lb.textContent = LANG_NAMES[LANG] || "";
+  var wb = document.getElementById("whoBtn");
+  if(wb) wb.textContent = myId || tr("名前");
+  var tdl = document.getElementById("todayLabel");
+  if(tdl) tdl.textContent = fmtDate(todayStr());
+}
+
+function openLangForm(){
+  openSheet(tr("言語"));
+  ["ja","en","hi"].forEach(function(code){
+    var b = el("button","toggle-row");
+    b.type = "button";
+    b.setAttribute("aria-pressed", LANG === code ? "true" : "false");
+    b.appendChild(el("span","toggle-label", LANG_NAMES[code]));
+    b.appendChild(el("span","toggle-state", LANG === code ? "✓" : ""));
+    b.addEventListener("click", function(){
+      setLang(code);
+      closeSheet();
+      applyStaticLang();
+      paint();
+    });
+    sheetBody.appendChild(b);
+  });
+  var close = el("button","btn", tr("閉じる"));
+  close.addEventListener("click", closeSheet);
+  footBtns([close]);
+}
+
+
+/* ============ 小道具 ============ */
+function el(tag, cls, text){
+  var n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text !== undefined && text !== null) n.textContent = text;
+  return n;
+}
+function pad(n){ return (n<10?"0":"") + n; }
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+}
+function fmtDate(s){
+  if(!s) return "";
+  var p = String(s).split("-");
+  if(p.length !== 3) return String(s);
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  if(isNaN(d.getTime())) return String(s);
+  return Number(p[1]) + "/" + Number(p[2]) + "(" + WD_ALL[LANG][d.getDay()] + ")";
+}
+function daysFrom(a, b){
+  var pa = String(a).split("-"), pb = String(b).split("-");
+  if(pa.length!==3 || pb.length!==3) return 0;
+  var da = Date.UTC(+pa[0], +pa[1]-1, +pa[2]);
+  var db_ = Date.UTC(+pb[0], +pb[1]-1, +pb[2]);
+  return Math.round((db_ - da) / 86400000);
+}
+var toastTimer = null;
+function toast(msg){
+  var old = document.querySelector(".toast");
+  if(old) old.remove();
+  var t = el("div","toast",msg);
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ if(t.parentNode) t.remove(); }, 2600);
+}
+
+/* ============ 状態 ============ */
+var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
+var loading = false;
+var treatments = [], mares = [], logs = [];
+var settings = null;
+var loaded = { t:false, e:false, l:false };
+var tab = "today";
+var treatFilter = "治療中";
+var examFilter  = "今日";
+var calMonth = null;
+var calSel = null;
+var renderSeq = 0;
+
+try{
+  var saved = localStorage.getItem("board.tab");
+  if(["today","todaytreat","treat","exam","cal"].indexOf(saved) >= 0) tab = saved;
+}catch(e){}
+
+/* ============ 起動（Googleスプレッドシート版） ============ */
+document.getElementById("todayLabel").textContent = fmtDate(todayStr());
+
+function setBanner(text){
+  var b = document.getElementById("banner");
+  if(!text){ b.hidden = true; b.textContent = ""; return; }
+  b.hidden = false; b.textContent = text;
+}
+
+/* ============ データの出し入れ（Firestore／オフライン対応） ============
+
+   画面のコードは今までどおり db.doc("mares/xxx").set(...) などを呼びます。
+   ここがそれを Firestore への読み書きに変えています。
+
+   ・電波がないときは、入力はこの端末の中に貯まります（アプリを閉じても消えません）。
+   ・電波が戻ると、貯まっていた分が自動で送られます。
+   ・他の人の入力も、電波があれば自動で画面に出ます。
+   ・はじめて開くときだけ、電波のある場所が必要です。
+*/
+
+/* 年度の保存・切り替えだけは、クリニックのサーバー（Apps Script）にお願いする。
+   新しい画面が開き、そこで確認してから実行される。 */
+var SEASON_URL = "https://script.google.com/macros/s/AKfycby6SvsntasPaD5mIEerD5mrQ3Ib-uqQwD1jeLtt_dlVAJc62EtJnjIziQ6W_DHQPrxmiw/exec";
+
+var FB = null;          /* Firebase の部品 */
+var fdb = null;         /* データベース */
+var FARM_DOC = "";      /* farms/<牧場コード> */
+var booted = false;
+
+var fromCache = true;   /* いま出している内容が、この端末の控えかどうか */
+var lastSyncAt = 0;     /* 最後にサーバーと合った時刻 */
+var writeError = "";    /* 送れずに捨てられた書き込みがあったか */
+
+var S   = { meta:null, settings:null, pass:null, mares:{}, treatments:{}, logs:{} };
+var got = { meta:false, settings:false, pass:false, mares:false, treatments:false, logs:false };
+var noFarm = false;     /* この牧場コードが見つからなかった */
+var pend = {};          /* 置き場ごとの未送信件数 */
+var cacheFlag = {};     /* 置き場ごとに、控えから出しているか */
+
+function server(){ return booted ? fdb : null; }
+
+function refOf(kind, id){ return FB.doc(fdb, FARM_DOC + "/" + kind + "/" + id); }
+
+function newId(kind){
+  var a = new Uint8Array(5), s = "";
+  crypto.getRandomValues(a);
+  for(var i=0;i<a.length;i++) s += ("0" + a[i].toString(16)).slice(-2);
+  return kind.charAt(0) + s;
+}
+
+function hhmm(ms){
+  var d = new Date(ms);
+  return pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+function pendingTotal(){
+  var n = 0;
+  Object.keys(pend).forEach(function(k){ n += pend[k] || 0; });
+  return n;
+}
+
+function updateStatus(){
+  if(locked) return;
+  var parts = [];
+  if(fromCache){
+    parts.push(tr("オフラインです。入力はこの端末に保存され、電波が入ると自動で送られます"));
+    if(lastSyncAt) parts.push(trf("最終同期 {t}", { t: hhmm(lastSyncAt) }));
+  }
+  var n = pendingTotal();
+  if(n > 0) parts.push(trf("未送信 {n} 件", { n: n }));
+  if(writeError) parts.push(tr("保存できなかったデータがあります。クリニックにご連絡ください"));
+  setBanner(parts.join("　/　"));
+}
+
+function noteSync(key, md, pendingCount){
+  cacheFlag[key] = !!(md && md.fromCache);
+  if(pendingCount !== undefined) pend[key] = pendingCount;
+  var live = false;
+  Object.keys(cacheFlag).forEach(function(k){ if(!cacheFlag[k]) live = true; });
+  fromCache = !live;
+  if(live) lastSyncAt = Date.now();
+  updateStatus();
+}
+
+/* ----- 合言葉（この端末の画面ロック） ----- */
+function sha256Hex(s){
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function(h){
+    return Array.prototype.map.call(new Uint8Array(h), function(b){
+      return ("0" + b.toString(16)).slice(-2);
+    }).join("");
+  });
+}
+function passMatches(pass){
+  var p = S.pass;
+  if(!p || !p.hash) return Promise.resolve(true);
+  return sha256Hex(String(p.salt) + "|" + String(pass || "")).then(function(h){ return h === p.hash; });
+}
+function setPasscodeRemote(newPass){
+  var np = String(newPass || "").trim();
+  var ref = FB.doc(fdb, FARM_DOC + "/access/pass");
+  if(!np){
+    localWrite(function(){ return FB.deleteDoc(ref); });
+    return Promise.resolve({ hasPass: false });
+  }
+  var salt = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+  return sha256Hex(salt + "|" + np).then(function(h){
+    localWrite(function(){ return FB.setDoc(ref, { salt: salt, hash: h }); });
+    return { hasPass: true };
+  });
+}
+
+function callServerAs(pass, fnName){
+  var args = Array.prototype.slice.call(arguments, 2);
+  if(fnName === "checkPass"){
+    return passMatches(pass).then(function(ok){ return { ok: ok }; });
+  }
+  if(fnName === "setPasscode"){
+    return setPasscodeRemote(args[0]);
+  }
+  return Promise.reject({ code:"unsupported", message: tr("この操作はこの画面ではできません") });
+}
+function callServer(fnName){
+  var args = Array.prototype.slice.call(arguments, 1);
+  return callServerAs.apply(null, [passcode, fnName].concat(args));
+}
+function isLockedError(e){
+  return !!(e && String(e.message || "").indexOf("LOCKED") >= 0);
+}
+function isNoFarmError(e){
+  return !!(e && String(e.message || "").indexOf("NOFARM") >= 0);
+}
+function showNoFarm(){
+  locked = true;
+  setBanner("");
+  var view = document.getElementById("view");
+  view.innerHTML = "";
+  var box = el("div","detail-block");
+  box.appendChild(el("h3", null, tr("牧場が指定されていません")));
+  box.appendChild(el("div", null,
+    tr("このボードは牧場ごとのURLで開きます。お手元のURLの末尾に ?farm= で始まる牧場コードが付いているか確認してください。")));
+  box.appendChild(el("div","log-meta",tr("分からない場合は、URLを配った方にお問い合わせください。")));
+  view.appendChild(box);
+}
+
+/* 合言葉 */
+var passcode = "";
+var locked = false;
+try{ passcode = localStorage.getItem("board.pass." + FARM) || ""; }catch(e){}
+function setPasscodeLocal(v){
+  passcode = v;
+  try{ localStorage.setItem("board.pass." + FARM, v); }catch(e){}
+}
+function showLock(msg){
+  locked = true;
+  setBanner("");
+  var view = document.getElementById("view");
+  view.innerHTML = "";
+  var box = el("div","detail-block");
+  box.appendChild(el("h3", null, tr("合言葉を入れてください")));
+  var i = inp("password", "", tr("合言葉"));
+  box.appendChild(field(tr("合言葉"), i, tr("この牧場のボードは合言葉で守られています。牧場の方にお聞きください")));
+  if(msg) box.appendChild(el("div","log-meta", msg));
+  var b = el("button","btn fill wide",tr("開く"));
+  b.style.marginTop = "12px";
+  async function tryOpen(){
+    var v = i.value.trim();
+    if(!v){ toast(tr("合言葉を入れてください")); i.focus(); return; }
+    b.disabled = true;
+    b.textContent = tr("確認しています…");
+    try{
+      var r = await callServerAs(v, "checkPass");
+      if(r && r.ok){
+        setPasscodeLocal(v);
+        locked = false;
+        refresh(true);
+      }else{
+        toast(tr("合言葉が違います"));
+        b.disabled = false;
+        b.textContent = tr("開く");
+      }
+    }catch(e){
+      toast(tr("確認できませんでした"));
+      b.disabled = false;
+      b.textContent = tr("開く");
+    }
+  }
+  b.addEventListener("click", tryOpen);
+  i.addEventListener("keydown", function(e){ if(e.key === "Enter") tryOpen(); });
+  box.appendChild(b);
+  view.appendChild(box);
+  i.focus();
+}
+
+/* 画面側のコードをそのまま動かすための橋渡し（保存先は Firestore） */
+var db = {
+  doc: function(path){
+    var p = String(path).split("/");
+    var kind = p[0], id = p[1];
+    return {
+      set: function(body){ return writeDoc(kind, id, body, false); },
+      "delete": function(){
+        return localWrite(function(){ return FB.deleteDoc(refOf(kind, id)); });
+      }
+    };
+  },
+  collection: function(name){
+    return {
+      add: function(body){
+        var id = newId(name);
+        return writeDoc(name, id, body, true).then(function(){ return id; });
+      }
+    };
+  }
+};
+
+/* 書き込みは、まずこの端末の中に入れて、すぐ画面を次に進めます。
+   サーバーへ送るのは Firestore が裏でやります（電波が戻ってからでも大丈夫）。 */
+function localWrite(fn){
+  return new Promise(function(resolve, reject){
+    var p;
+    try{ p = fn(); }
+    catch(e){ reject(e); return; }
+    if(p && typeof p.then === "function"){
+      p.then(function(){ writeError = ""; }, function(err){
+        /* ここに来るのは、権限などで受け取ってもらえなかったとき */
+        writeError = String((err && err.code) || err || "");
+        updateStatus();
+      });
+    }
+    resolve();
+  });
+}
+
+function str(v){ return (v === undefined || v === null) ? "" : String(v); }
+
+function cleanRec(r){
+  r = r || {};
+  var out = {};
+  ["kind","label","date","result","memo","by","at","lf","rf","cl"].forEach(function(k){
+    out[k] = str(r[k]);
+  });
+  return out;
+}
+
+var MARE_FIELDS = ["horse","place","foalingDate","breedingDate","stallion",
+                   "category","note","createdBy","createdAt","updatedAt"];
+
+/* 画面が渡してくる「馬まるごと」を、保存の形に直す */
+function toStore(body){
+  var o = {};
+  MARE_FIELDS.forEach(function(k){ o[k] = str(body[k]); });
+  o.manual = (body.manual && body.manual.date) ? {
+    date: str(body.manual.date), label: str(body.manual.label), memo: str(body.manual.memo)
+  } : null;
+  o.done = {};
+  var d = body.done || {};
+  Object.keys(d).forEach(function(k){ o.done[k] = cleanRec(d[k]); });
+  o.others = {};
+  (body.others || []).forEach(function(x){
+    if(!x || !x.id) return;
+    o.others[String(x.id)] = {
+      date: str(x.date), title: str(x.title), memo: str(x.memo), by: str(x.by)
+    };
+  });
+  return o;
+}
+
+/* 変わったところだけを書く。
+   こうすると、同じ馬を二人が別々に触っても、お互いの入力が消えません。 */
+function mareDiff(prev, next){
+  var args = [];
+  function push(path, val){ args.push(path, val); }
+  MARE_FIELDS.forEach(function(k){
+    if(str(prev[k]) !== next[k]) push(k, next[k]);
+  });
+  if(JSON.stringify(prev.manual || null) !== JSON.stringify(next.manual)) push("manual", next.manual);
+  var pd = prev.done || {}, nd = next.done || {};
+  Object.keys(nd).forEach(function(k){
+    if(JSON.stringify(pd[k]) !== JSON.stringify(nd[k])) push(new FB.FieldPath("done", k), nd[k]);
+  });
+  Object.keys(pd).forEach(function(k){
+    if(!(k in nd)) push(new FB.FieldPath("done", k), FB.deleteField());
+  });
+  var po = prev.others || {}, no = next.others || {};
+  Object.keys(no).forEach(function(k){
+    if(JSON.stringify(po[k]) !== JSON.stringify(no[k])) push(new FB.FieldPath("others", k), no[k]);
+  });
+  Object.keys(po).forEach(function(k){
+    if(!(k in no)) push(new FB.FieldPath("others", k), FB.deleteField());
+  });
+  return args;
+}
+
+function flat(body, keys){
+  var o = {};
+  keys.forEach(function(k){ o[k] = str(body[k]); });
+  return o;
+}
+
+function writeDoc(kind, id, body, isNew){
+  var ref = refOf(kind, id);
+  if(kind === "mares"){
+    var m = toStore(body);
+    var prev = S.mares[id];
+    if(isNew || !prev){
+      return localWrite(function(){ return FB.setDoc(ref, m); });
+    }
+    var args = mareDiff(prev, m);
+    if(!args.length) return Promise.resolve();
+    return localWrite(function(){
+      return FB.updateDoc.apply(null, [ref].concat(args));
+    });
+  }
+  if(kind === "settings"){
+    var s = {
+      foalOffset: Number(body.foalOffset) || 8,
+      gestation: Number(body.gestation) || 340,
+      steps: body.steps || {}
+    };
+    return localWrite(function(){ return FB.setDoc(ref, s); });
+  }
+  if(kind === "treatments"){
+    return localWrite(function(){
+      return FB.setDoc(ref, flat(body, ["horse","place","problem","plan","startDate",
+                                        "status","createdBy","createdAt","updatedAt"]),
+                       { merge: true });
+    });
+  }
+  if(kind === "logs"){
+    return localWrite(function(){
+      return FB.setDoc(ref, flat(body, ["treatmentId","date","text","by","at"]), { merge: true });
+    });
+  }
+  return Promise.reject({ code:"unknown", message:"不明な保存先: " + kind });
+}
+
+/* ----- 受け取り（変わったら自動で画面に出る） ----- */
+function startListening(){
+  var opts = { includeMetadataChanges: true };
+
+  function one(key, path, onDoc){
+    FB.onSnapshot(FB.doc(fdb, path), opts, function(s){
+      onDoc(s.exists() ? s.data() : null, s);
+      got[key] = true;
+      noteSync(key, s.metadata, s.metadata.hasPendingWrites ? 1 : 0);
+      if(key === "pass") checkLock();
+      pushData();
+    }, onListenError);
+  }
+
+  one("meta", FARM_DOC + "/meta/info", function(v, s){
+    S.meta = v;
+    /* サーバーまで届いていて、その牧場が無いときだけ「牧場がありません」を出す。
+       電波がないときは出さない（この端末の控えに無いだけかもしれないため）。 */
+    if(!v && s && !s.metadata.fromCache && !s.metadata.hasPendingWrites) noFarm = true;
+  });
+  one("settings", FARM_DOC + "/settings/schedule", function(v){ S.settings = v; });
+  one("pass",     FARM_DOC + "/access/pass",       function(v){ S.pass = v; });
+
+  ["mares","treatments","logs"].forEach(function(k){
+    FB.onSnapshot(FB.collection(fdb, FARM_DOC + "/" + k), opts, function(qs){
+      var map = {}, n = 0;
+      qs.forEach(function(d){
+        map[d.id] = d.data();
+        if(d.metadata.hasPendingWrites) n++;
+      });
+      if(!n && qs.metadata.hasPendingWrites) n = 1;
+      S[k] = map;
+      got[k] = true;
+      noteSync(k, qs.metadata, n);
+      pushData();
+    }, onListenError);
+  });
+}
+
+function onListenError(err){
+  var code = String((err && err.code) || err || "");
+  if(code.indexOf("permission") >= 0){
+    setBanner(tr("このボードを開く権限がありません。URLをもう一度確認してください。"));
+  }else{
+    setBanner(tr("つながりませんでした。電波の入る場所でアプリを開き直してください。"));
+  }
+}
+
+function checkLock(){
+  passMatches(passcode).then(function(ok){
+    if(!ok){ showLock(); }
+    else if(locked){ locked = false; pushData(); }
+  });
+}
+
+function toMare(id, r){
+  r = r || {};
+  var others = [];
+  var om = r.others || {};
+  Object.keys(om).forEach(function(k){
+    var x = om[k] || {};
+    others.push({ id: k, date: x.date || "", title: x.title || "", memo: x.memo || "", by: x.by || "" });
+  });
+  others.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return {
+    id: id,
+    horse: r.horse || "", place: r.place || "",
+    foalingDate: r.foalingDate || "", breedingDate: r.breedingDate || "",
+    stallion: r.stallion || "", category: r.category || "", note: r.note || "",
+    manual: (r.manual && r.manual.date) ? r.manual : null,
+    done: r.done || {},
+    others: others,
+    createdBy: r.createdBy || "", createdAt: r.createdAt || "", updatedAt: r.updatedAt || ""
+  };
+}
+
+function byCreated(a, b){
+  var x = String(a.createdAt), y = String(b.createdAt);
+  if(x !== y) return x.localeCompare(y);
+  return String(a.id).localeCompare(String(b.id));
+}
+
+function listOf(kind){
+  return Object.keys(S[kind]).map(function(id){
+    var o = Object.assign({ id: id }, S[kind][id]);
+    return o;
+  }).sort(byCreated);
+}
+
+var lastShape = "";
+function pushData(){
+  if(noFarm){ showNoFarm(); return; }
+  if(locked) return;
+  if(!(got.mares && got.treatments && got.logs && got.pass)) return;
+  /* 中身が変わっていないとき（送信の状態だけ変わったとき）は描き直さない */
+  var shape = JSON.stringify([S.meta, S.settings, S.mares, S.treatments, S.logs]);
+  if(shape === lastShape){ updateStatus(); return; }
+  lastShape = shape;
+  var mareList = Object.keys(S.mares).map(function(id){ return toMare(id, S.mares[id]); }).sort(byCreated);
+  applyData({
+    farmName: (S.meta && S.meta.name) || "",
+    mares: mareList,
+    treatments: listOf("treatments"),
+    logs: listOf("logs"),
+    settings: S.settings || null
+  });
+  updateStatus();
+}
+
+/* ----- はじめの準備 ----- */
+function boardBoot(){
+  FB = window.BOARD_FB;
+  if(!FB){
+    setBanner(tr("アプリの部品を読み込めませんでした。電波の入る場所で開き直してください。"));
+    return;
+  }
+  if(!FARM){ showNoFarm(); return; }
+  try{
+    var app  = FB.initializeApp(window.BOARD_FIREBASE_CONFIG);
+    fdb = FB.initializeFirestore(app, {
+      localCache: FB.persistentLocalCache({ tabManager: FB.persistentMultipleTabManager() })
+    });
+    FARM_DOC = "farms/" + FARM;
+    var auth = FB.getAuth(app);
+    FB.onAuthStateChanged(auth, function(u){
+      if(u){
+        if(!booted){ booted = true; startListening(); }
+      }else{
+        FB.signInAnonymously(auth).catch(function(){
+          setBanner(tr("はじめて使うときは、電波のある場所で一度開いてください。"));
+        });
+      }
+    });
+  }catch(e){
+    setBanner(tr("アプリを始められませんでした。電波の入る場所で開き直してください。"));
+  }
+}
+
+function applyData(d){
+  if(!d) return;
+  if(d.farmName){
+    farmNameNow = d.farmName;
+    document.querySelector(".brand").textContent = d.farmName;
+    /* ホーム画面に追加したときの名前を牧場名にする */
+    try{
+      document.title = d.farmName;
+      var mt = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if(mt) mt.setAttribute("content", d.farmName);
+    }catch(e){ }
+    /* 入口ページ（クリニックのサイトに置くページ）に牧場名を伝える。
+       ホーム画面に追加したときの名前に使われる。入口ページ経由でなければ何も起きない。 */
+    try{
+      if(window.top && window.top !== window){
+        window.top.postMessage({ board: "farmName", name: d.farmName }, "*");
+      }
+    }catch(e){ /* 伝えられなくても動く */ }
+  }
+  treatments = mergeList(treatments, d.treatments || []);
+  mares      = mergeList(mares,      d.mares || []);
+  logs       = mergeList(logs,       d.logs || []);
+  settings = d.settings || null;
+  loaded.t = loaded.e = loaded.l = true;
+  updateStatus();
+  render();
+}
+
+/* 同じIDのものは、入れものはそのままに中身だけ入れ替える */
+function mergeList(oldArr, newArr){
+  var byId = {};
+  (oldArr || []).forEach(function(o){ if(o && o.id) byId[o.id] = o; });
+  return (newArr || []).map(function(n){
+    var o = byId[n.id];
+    if(!o) return n;
+    Object.keys(o).forEach(function(k){ if(!(k in n)) delete o[k]; });
+    Object.keys(n).forEach(function(k){ o[k] = n[k]; });
+    return o;
+  });
+}
+/* 読み込みは Firestore が自動でやるので、ここは描き直すだけ */
+function refresh(force){
+  if(locked) return;
+  pushData();
+  render();
+}
+
+/* 記録した人の名前（この端末にだけ保存されます） */
+try{ myId = localStorage.getItem("board.name") || ""; }catch(e){}
+function setMyName(n){
+  myId = n;
+  try{ localStorage.setItem("board.name", n); }catch(e){}
+  document.getElementById("whoBtn").textContent = n || tr("名前");
+}
+function openNameForm(){
+  openSheet(tr("あなたの名前"));
+  var n = inp("text", myId || "", tr("例：佐藤"));
+  sheetBody.appendChild(field(tr("名前"), n, tr("記録した人として残ります。この端末にだけ保存され、他の人の端末には影響しません")));
+  var save = el("button","btn fill",tr("保存"));
+  save.addEventListener("click", function(){
+    if(!n.value.trim()){ toast(tr("名前を入れてください")); n.focus(); return; }
+    setMyName(n.value.trim());
+    closeSheet();
+    paint();
+  });
+  footBtns([save]);
+}
+setMyName(myId);
+document.getElementById("whoBtn").addEventListener("click", openNameForm);
+document.getElementById("langBtn").addEventListener("click", openLangForm);
+applyStaticLang();
+
+if(!FARM){ showNoFarm(); }
+else{ setBanner(tr("読み込んでいます…")); }
+if(FARM && !myId) setTimeout(openNameForm, 500);
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && !locked) updateStatus(); });
+
+/* 電波がなくても入力できる（この端末に貯めて、あとで送る） */
+function canWrite(){ return true; }
+async function guardedWrite(fn, okMsg){
+  try{
+    await fn();
+    if(okMsg) toast(okMsg);
+    return true;
+  }catch(e){
+    toast(tr("保存できませんでした。電波の入る場所でもう一度お試しください"));
+    return false;
+  }
+}
+
+/* ============ 集計 ============ */
+function activeTreatments(){
+  return treatments.filter(function(t){ return t.status === "治療中" || t.status === "経過観察"; });
+}
+function lastLogDate(treatmentId){
+  var best = "";
+  for(var i=0;i<logs.length;i++){
+    var l = logs[i];
+    if(l.treatmentId === treatmentId && typeof l.date === "string" && l.date > best) best = l.date;
+  }
+  return best;
+}
+function logsFor(id){
+  return logs.filter(function(l){ return l.treatmentId === id; })
+             .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+}
+/* --- 繁殖の予定日を計算する --- */
+function addDays(dateStr, n){
+  var p = String(dateStr).split("-");
+  if(p.length !== 3) return "";
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  if(isNaN(d.getTime())) return "";
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+}
+var ALL_STEPS = [[15,"種付後15日"],[18,"種付後18日"],[21,"3週"],[28,"4週"],[35,"5週"]];
+function stepOn(n){
+  if(!settings || !settings.steps) return true;
+  return settings.steps[String(n)] !== false;
+}
+function breedSteps(){
+  return ALL_STEPS.filter(function(s){ return stepOn(s[0]); });
+}
+function foalOffset(){
+  var v = settings ? Number(settings.foalOffset) : 0;
+  return (v > 0 && v < 100) ? v : 8;
+}
+function gestationDays(){
+  var v = settings ? Number(settings.gestation) : 0;
+  return (v > 200 && v < 400) ? v : 340;
+}
+/** 受胎が確認できている馬の分娩予定日。それ以外は空 */
+function expectedFoaling(m){
+  if(!m.breedingDate) return "";
+  if(mareStatus(m) !== "受胎") return "";
+  return addDays(m.breedingDate, gestationDays());
+}
+function foalingByDate(){
+  var map = {};
+  mares.forEach(function(m){
+    var d = expectedFoaling(m);
+    if(d) (map[d] = map[d] || []).push(m);
+  });
+  return map;
+}
+function stepsLabel(){
+  var b = breedSteps();
+  if(!b.length) return tr("（妊娠鑑定の項目はすべて外れています）");
+  return b.map(function(s){ return trl(s[1]).replace("種付後",""); }).join("・");
+}
+
+function scheduleFor(m){
+  var out = [];
+  if(m.foalingDate){
+    out.push({
+      key: "f" + foalOffset() + "@" + m.foalingDate,
+      kind: "直検",
+      label: foalLabelJa(),
+      date: addDays(m.foalingDate, foalOffset())
+    });
+  }
+  if(m.breedingDate){
+    breedSteps().forEach(function(s){
+      out.push({
+        key: "b" + s[0] + "@" + m.breedingDate,
+        kind: "妊娠鑑定",
+        label: s[1],
+        date: addDays(m.breedingDate, s[0])
+      });
+    });
+  }
+  if(m.manual && m.manual.date){
+    out.push({
+      key: "m@" + m.manual.date + "@" + (m.manual.label || ""),
+      kind: "直検",
+      label: m.manual.label || "次の直検（手入力）",
+      date: m.manual.date,
+      manual: true
+    });
+  }
+  (m.others || []).forEach(function(o){
+    out.push({
+      key: "o@" + o.id,
+      kind: "その他処置",
+      label: o.title || "その他処置",
+      date: o.date,
+      other: o
+    });
+  });
+  var doneMap = m.done || {};
+  out.forEach(function(it){ it.done = doneMap[it.key] || null; it.mare = m; });
+  out.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return out;
+}
+function pendingFor(m){
+  return scheduleFor(m).filter(function(it){ return !it.done && it.date; });
+}
+function nextItem(m, kind){
+  var p = pendingFor(m);
+  if(kind) p = p.filter(function(it){ return it.kind === kind; });
+  return p[0] || null;
+}
+function nextExam(m){
+  return pendingFor(m)[0] || null;
+}
+function lastDone(m, kind){
+  var d = scheduleFor(m).filter(function(it){ return it.done && (!kind || it.kind === kind); });
+  return d.length ? d[d.length-1] : null;
+}
+function dueItems(limitDate){
+  var out = [];
+  mares.forEach(function(m){
+    pendingFor(m).forEach(function(it){
+      if(!limitDate || it.date <= limitDate) out.push(it);
+    });
+  });
+  out.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return out;
+}
+var PREG_POSITIVE = {"受胎":1,"双子":1,"妊娠確認":1};  // 妊娠確認は以前の記録用
+function latestPregDone(m){
+  var d = m.done || {};
+  var arr = Object.keys(d).map(function(k){ return d[k]; })
+    .filter(function(x){ return x && x.kind === "妊娠鑑定"; })
+    .sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return arr.length ? arr[arr.length-1] : null;
+}
+/** 今の種付日に対する、いちばん新しい妊娠鑑定の結果 */
+function currentPregDone(m){
+  if(!m.breedingDate) return null;
+  var d = m.done || {};
+  var arr = Object.keys(d)
+    .filter(function(k){ return k.indexOf("@" + m.breedingDate) > 0; })
+    .map(function(k){ return d[k]; })
+    .filter(function(x){ return x && x.kind === "妊娠鑑定"; })
+    .sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return arr.length ? arr[arr.length-1] : null;
+}
+function mareStatus(m){
+  if(m.breedingDate){
+    var last = currentPregDone(m);
+    if(last && PREG_POSITIVE[last.result]) return "受胎";
+    if(!last) return "妊娠鑑定待ち";
+    return "直検継続";
+  }
+  if(!m.foalingDate && !(m.manual && m.manual.date) && !((m.others || []).length)) return "未設定";
+  return "直検継続";
+}
+function statusChipClass(st){
+  return st === "受胎" ? "e" : st === "妊娠鑑定待ち" ? "t" : st === "直検継続" ? "b" : "n";
+}
+function stageClass(st){
+  return st === "受胎" ? "st-preg" : st === "妊娠鑑定待ち" ? "st-wait"
+       : st === "直検継続" ? "st-cont" : "st-none";
+}
+/* 並び順：受胎 → 妊娠鑑定待ち → 直検継続 → 未設定 */
+var STAGE_ORDER = { "受胎":0, "妊娠鑑定待ち":1, "直検継続":2, "未設定":3 };
+function byStage(a, b){
+  var sa = mareStatus(a), sb = mareStatus(b);
+  if(STAGE_ORDER[sa] !== STAGE_ORDER[sb]) return STAGE_ORDER[sa] - STAGE_ORDER[sb];
+  if(sa === "受胎" || sa === "妊娠鑑定待ち"){
+    var da = a.breedingDate || "9999-99-99";
+    var db2 = b.breedingDate || "9999-99-99";
+    if(da !== db2) return da.localeCompare(db2);
+  }
+  var na = nextItem(a, null), nb = nextItem(b, null);
+  if(na && nb && na.date !== nb.date) return String(na.date).localeCompare(String(nb.date));
+  if(na && !nb) return -1;
+  if(!na && nb) return 1;
+  return sortByHorse(a, b);
+}
+function horseNames(){
+  var set = {};
+  treatments.forEach(function(t){ if(t.horse) set[t.horse] = 1; });
+  mares.forEach(function(m){ if(m.horse) set[m.horse] = 1; });
+  return Object.keys(set).sort();
+}
+function sortByHorse(a,b){ return String(a.horse||"").localeCompare(String(b.horse||""),"ja"); }
+
+/* ============ 描画 ============ */
+function nameOf(id){ return id || ""; }
+function byLine(id, when){
+  var n = nameOf(id);
+  var parts = [];
+  if(when) parts.push(fmtDate(when));
+  parts.push(n ? n : tr("記録者不明"));
+  return parts.join(tr(" ・ "));
+}
+
+function render(){ paint(); }
+
+function paint(){
+  if(locked) return;
+  syncDatalist();
+  var view = document.getElementById("view");
+  view.innerHTML = "";
+
+  document.getElementById("n-today").textContent = String(dueItems(todayStr()).length);
+  document.getElementById("n-todaytreat").textContent = String(activeTreatments().length);
+  document.getElementById("n-treat").textContent = String(treatList().length);
+  document.getElementById("n-exam").textContent = String(examList().length);
+  document.getElementById("n-cal").textContent = String(dueItems(addDays(todayStr(), 7)).length);
+
+  Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function(b){
+    b.setAttribute("aria-selected", b.dataset.tab === tab ? "true" : "false");
+  });
+
+  if(!loaded.t && !loaded.e && db){
+    view.appendChild(el("div","empty",tr("読み込んでいます…")));
+    return;
+  }
+  if(tab === "today") paintToday(view);
+  else if(tab === "todaytreat") paintTodayTreat(view);
+  else if(tab === "treat") paintTreat(view);
+  else if(tab === "cal") paintCal(view);
+  else paintExam(view);
+  view.scrollTop = 0;
+}
+
+function syncDatalist(){
+  var dl = document.getElementById("horseNames");
+  dl.innerHTML = "";
+  horseNames().forEach(function(n){
+    var o = document.createElement("option");
+    o.value = n;
+    dl.appendChild(o);
+  });
+  var sl = document.getElementById("stallionNames");
+  if(sl){
+    sl.innerHTML = "";
+    var set = {};
+    mares.forEach(function(m){ if(m.stallion) set[m.stallion] = 1; });
+    Object.keys(set).sort().forEach(function(n){
+      var o = document.createElement("option");
+      o.value = n;
+      sl.appendChild(o);
+    });
+  }
+}
+
+/* 各タブに実際に並ぶカードの数。バッジはこれを表示する */
+function treatList(){
+  return treatments.filter(function(t){
+    return treatFilter === "すべて" ? true : t.status === treatFilter;
+  }).sort(sortByHorse);
+}
+function examList(){
+  if(examFilter === "今日") return dueItems(todayStr());
+  if(examFilter === "今週") return dueItems(addDays(todayStr(), 7));
+  var list = mares.slice();
+  if(examFilter === "直検継続" || examFilter === "妊娠鑑定待ち" || examFilter === "受胎"){
+    list = list.filter(function(m){ return mareStatus(m) === examFilter; });
+  }
+  return list;
+}
+
+function unrecordedToday(){
+  var td = todayStr();
+  return activeTreatments().filter(function(t){ return lastLogDate(t.id) !== td; });
+}
+
+function sectionHead(title, count, unit, danger){
+  var h = el("div","section-head");
+  h.appendChild(el("h2","section-title" + (danger ? " danger" : ""), title));
+  h.appendChild(el("span","section-count" + (danger ? " danger" : ""),
+    trf(unit === "頭" ? "{n}頭" : tr("{n}件"), { n: count })));
+  return h;
+}
+
+function paintDueGroups(view, limitDate, scope, emptyMsg){
+  var due = dueItems(limitDate);
+  if(!due.length){
+    view.appendChild(el("div","empty", emptyMsg));
+    return;
+  }
+  var td = todayStr();
+  var late = due.filter(function(it){ return it.date < td; });
+  var rest = due.filter(function(it){ return it.date >= td; });
+  var groups = [];
+  if(late.length) groups.push([tr("期限すぎ"), late, true]);
+  ["直検","妊娠鑑定","その他処置"].forEach(function(k){
+    var g = rest.filter(function(it){ return it.kind === k; });
+    if(g.length) groups.push([tr(scope + "の" + k), g, false]);
+  });
+  groups.forEach(function(gr){
+    view.appendChild(sectionHead(gr[0], gr[1].length, "件", gr[2]));
+    var s = el("div","stack");
+    gr[1].forEach(function(it){ s.appendChild(itemCard(it)); });
+    view.appendChild(s);
+  });
+}
+
+/* ----- 今日の直検 ----- */
+function paintToday(view){
+  paintDueGroups(view, todayStr(), "今日", tr("今日やる直検はありません。"));
+}
+
+/* ----- 今日の治療 ----- */
+function paintTodayTreat(view){
+  var act = activeTreatments().sort(sortByHorse);
+  var td = todayStr();
+  var yet = act.filter(function(t){ return lastLogDate(t.id) !== td; });
+  var done = act.filter(function(t){ return lastLogDate(t.id) === td; });
+
+  if(!act.length){
+    view.appendChild(el("div","empty",tr("治療中の馬はいません。")));
+    return;
+  }
+  if(yet.length){
+    view.appendChild(sectionHead(tr("本日未記録"), yet.length, "頭", true));
+    var s1 = el("div","stack");
+    yet.forEach(function(t){ s1.appendChild(treatCard(t)); });
+    view.appendChild(s1);
+  }
+  if(done.length){
+    view.appendChild(sectionHead(tr("本日記録済"), done.length, "頭"));
+    var s2 = el("div","stack");
+    done.forEach(function(t){ s2.appendChild(treatCard(t)); });
+    view.appendChild(s2);
+  }
+}
+
+/* ----- 治療タブ ----- */
+function paintTreat(view){
+  var bar = el("div","newbar");
+  var addBtn = el("button","btn t wide",tr("治療を登録"));
+  addBtn.disabled = !canWrite();
+  addBtn.addEventListener("click", function(){ openTreatForm(null); });
+  bar.appendChild(addBtn);
+  view.appendChild(bar);
+
+  var f = el("div","filters");
+  [["治療中","治療中"],["経過観察","経過観察"],["終了","終了"],["すべて","すべて"]].forEach(function(p){
+    var b = el("button",null, tr(p[0]));
+    b.setAttribute("aria-pressed", treatFilter === p[1] ? "true":"false");
+    b.addEventListener("click", function(){ treatFilter = p[1]; paint(); });
+    f.appendChild(b);
+  });
+  view.appendChild(f);
+
+  var list = treatList();
+
+  if(!list.length){
+    view.appendChild(el("div","empty",tr("該当する馬はいません。")));
+    return;
+  }
+  var s = el("div","stack");
+  list.forEach(function(t){ s.appendChild(treatCard(t)); });
+  view.appendChild(s);
+}
+
+/* ----- 直検タブ ----- */
+function paintExam(view){
+  var bar = el("div","newbar");
+  var addBtn = el("button","btn e wide",tr("繁殖牝馬を登録"));
+  addBtn.disabled = !canWrite();
+  addBtn.addEventListener("click", function(){ openMareForm(null); });
+  bar.appendChild(addBtn);
+  view.appendChild(bar);
+
+  var tally = {"直検継続":0, "妊娠鑑定待ち":0, "受胎":0, "未設定":0};
+  mares.forEach(function(m){ tally[mareStatus(m)]++; });
+  var tl = el("div","tally");
+  [["直検継続", tally["直検継続"]], ["妊娠鑑定待ち", tally["妊娠鑑定待ち"]], ["受胎", tally["受胎"]], ["全頭", mares.length]].forEach(function(p){
+    var d = el("div");
+    d.appendChild(el("span","n", String(p[1])));
+    d.appendChild(el("span","l", tr(p[0])));
+    tl.appendChild(d);
+  });
+  view.appendChild(tl);
+
+  var f = el("div","filters");
+  ["今日","今週","直検継続","妊娠鑑定待ち","受胎","全頭"].forEach(function(p){
+    var b = el("button", null, tr(p));
+    b.setAttribute("aria-pressed", examFilter === p ? "true" : "false");
+    b.addEventListener("click", function(){ examFilter = p; paint(); });
+    f.appendChild(b);
+  });
+  view.appendChild(f);
+
+  if(examFilter === "今日"){
+    paintDueGroups(view, todayStr(), "今日", tr("今日やる直検はありません。"));
+    return;
+  }
+  if(examFilter === "今週"){
+    paintDueGroups(view, addDays(todayStr(), 7), "今週", tr("今週の予定はありません。"));
+    return;
+  }
+
+  var list = examList().slice();
+  list.sort(byStage);
+
+  if(!list.length){
+    view.appendChild(el("div","empty",
+      examFilter === "全頭"
+        ? tr("まだ登録がありません。分娩日か種付日を入れると、予定日が自動で出ます。")
+        : tr("この分類に入る馬はいません。")));
+    return;
+  }
+  var s = el("div","stack");
+  list.forEach(function(m){ s.appendChild(mareCard(m)); });
+  view.appendChild(s);
+}
+
+/* ----- カード ----- */
+function treatCard(t){
+  var done = (t.status === "終了");
+  var c = el("button","card t" + (done ? " done":""));
+  c.type = "button";
+
+  var h = el("div","horse", t.horse || tr("（馬名なし）"));
+  if(t.place) h.appendChild(el("span","place", t.place));
+  c.appendChild(h);
+
+  if(t.problem) c.appendChild(el("div","line", t.problem));
+  if(t.plan) c.appendChild(el("div","line sub", t.plan));
+
+  var m = el("div","meta");
+  m.appendChild(el("span","chip " + (t.status === "治療中" ? "t" : t.status === "経過観察" ? "w" : "n"), tr(t.status || "治療中")));
+
+  if(!done){
+    var last = lastLogDate(t.id);
+    var td = todayStr();
+    if(last === td) m.appendChild(el("span","chip n",tr("本日記録済")));
+    else m.appendChild(el("span","chip w",tr("本日未記録")));
+    if(last) m.appendChild(el("span",null, trf("最終処置 {d}", { d: fmtDate(last) })));
+    else if(t.startDate) m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
+  }else if(t.startDate){
+    m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
+  }
+  c.appendChild(m);
+
+  c.addEventListener("click", function(){ openTreatDetail(t.id); });
+  return c;
+}
+
+function dueChip(dateStr){
+  var d = daysFrom(todayStr(), dateStr);
+  if(d < 0) return el("span","chip w", trf("{n}日超過", { n: -d }));
+  if(d === 0) return el("span","chip e", tr("本日"));
+  if(d === 1) return el("span","chip n", tr("明日"));
+  return el("span","chip n", trf("{n}日後", { n: d }));
+}
+
+function rowsGrid(pairs){
+  var g = el("div","rows");
+  pairs.forEach(function(p){
+    g.appendChild(el("div","row-label", p[0]));
+    var v = el("div","row-value");
+    if(typeof p[1] === "string") v.textContent = p[1];
+    else v.appendChild(p[1]);
+    g.appendChild(v);
+  });
+  return g;
+}
+
+function mareCard(m){
+  var st0 = mareStatus(m);
+  var c = el("button","card " + stageClass(st0));
+  c.type = "button";
+
+  c.appendChild(horseLine(m));
+
+  var next = nextExam(m);
+  var nextPreg = nextItem(m, "妊娠鑑定");
+  var nextOther = nextItem(m, "その他処置");
+  var lastPreg = lastDone(m, "妊娠鑑定");
+
+  var nextVal;
+  if(next){
+    nextVal = el("span");
+    nextVal.appendChild(el("strong", null, fmtDate(next.date) + "　" + trl(next.label)));
+    nextVal.appendChild(document.createTextNode(" "));
+    nextVal.appendChild(dueChip(next.date));
+    if(next.manual){
+      nextVal.appendChild(document.createTextNode(" "));
+      nextVal.appendChild(el("span","chip n",tr("手入力")));
+    }
+  }else{
+    nextVal = tr("予定なし");
+  }
+
+  var pregVal;
+  if(nextPreg) pregVal = fmtDate(nextPreg.date) + "　" + trl(nextPreg.label);
+  else if(lastPreg) pregVal = trl(lastPreg.label) + "：" + tr(lastPreg.done.result || tr("記録済"));
+  else pregVal = tr("種付日が未入力");
+
+  var otherVal = nextOther ? (fmtDate(nextOther.date) + "　" + nextOther.label) : tr("なし");
+
+  var rows = [[tr("次の直検"), nextVal], ["妊娠鑑定", pregVal], ["その他処置", otherVal]];
+  var foalDue = expectedFoaling(m);
+  if(foalDue){
+    var fv = el("span");
+    fv.appendChild(el("strong", null, fmtDate(foalDue)));
+    fv.appendChild(document.createTextNode(" "));
+    var fd0 = daysFrom(todayStr(), foalDue);
+    fv.appendChild(el("span","chip t",
+      fd0 < 0 ? trf("{n}日経過", { n: -fd0 }) : fd0 === 0 ? tr("本日") : trf("あと{n}日", { n: fd0 })));
+    rows.push([tr("分娩予定"), fv]);
+  }
+  c.appendChild(rowsGrid(rows));
+
+  var meta = el("div","meta");
+  var st = st0;
+  meta.appendChild(el("span","chip " + statusChipClass(st), tr(st)));
+  if(m.foalingDate) meta.appendChild(el("span", null, trf("分娩 {d}", { d: fmtDate(m.foalingDate) })));
+  if(m.breedingDate) meta.appendChild(el("span", null, trf("種付 {d}", { d: fmtDate(m.breedingDate) })));
+  if(m.stallion) meta.appendChild(el("span", null, trf("種牡馬 {s}", { s: m.stallion })));
+  if(!m.foalingDate && !m.breedingDate) meta.appendChild(el("span","chip w",tr("日付が未入力")));
+  c.appendChild(meta);
+
+  c.addEventListener("click", function(){ openMareDetail(m.id); });
+  return c;
+}
+
+function foalCard(m){
+  var c = el("button","card t");
+  c.type = "button";
+  c.appendChild(horseLine(m));
+  var d = expectedFoaling(m);
+  c.appendChild(el("div","line", fmtDate(d) + "　" + tr("分娩予定")));
+  var meta = el("div","meta");
+  meta.appendChild(el("span","chip t", tr("分娩予定")));
+  var dd = daysFrom(todayStr(), d);
+  meta.appendChild(el("span", null,
+    dd < 0 ? trf("{n}日経過", { n: -dd }) : dd === 0 ? tr("本日") : trf("あと{n}日", { n: dd })));
+  if(m.breedingDate) meta.appendChild(el("span", null, trf("種付 {d}", { d: fmtDate(m.breedingDate) })));
+  c.appendChild(meta);
+  c.addEventListener("click", function(){ openMareDetail(m.id); });
+  return c;
+}
+
+function itemCard(it){
+  var m = it.mare;
+  var overdue = !it.done && it.date && it.date < todayStr();
+  var c = el("button","card e" + (it.done ? " done" : "") + (overdue ? " late" : ""));
+  c.type = "button";
+
+  c.appendChild(horseLine(m));
+
+  c.appendChild(el("div","line", fmtDate(it.date) + "　" + trl(it.label)));
+  if(it.other && it.other.memo) c.appendChild(el("div","line sub", it.other.memo));
+  if(it.done) c.appendChild(el("div","line", trf("結果：{r}", { r: doneText(it.done) || tr("記録済") })));
+
+  var meta = el("div","meta");
+  meta.appendChild(el("span","chip e", tr(it.kind)));
+  if(it.done){
+    meta.appendChild(el("span","chip n", tr(it.done.result === "未実施" ? "未実施" : "実施済")));
+    if(it.done.by) meta.appendChild(el("span", null, nameOf(it.done.by) || tr("記録者不明")));
+  }else{
+    meta.appendChild(dueChip(it.date));
+  }
+  c.appendChild(meta);
+
+  c.addEventListener("click", function(){ openMareDetail(m.id); });
+  return c;
+}
+
+/* ----- 予定表（カレンダー） ----- */
+function shiftMonth(ym, n){
+  var y = Number(ym.slice(0,4)), mo = Number(ym.slice(5,7)) - 1 + n;
+  var d = new Date(y, mo, 1);
+  return d.getFullYear() + "-" + pad(d.getMonth()+1);
+}
+function fmtFull(s){
+  var p = String(s).split("-");
+  if(p.length !== 3) return String(s);
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  if(isNaN(d.getTime())) return String(s);
+  var wd = WD_ALL[LANG][d.getDay()];
+  if(LANG === "ja") return Number(p[1]) + tr("月") + Number(p[2]) + tr("日(") + wd + ")";
+  var mon = (LANG === "hi" ? MONTHS_HI : MONTHS_EN)[Number(p[1]) - 1];
+  return mon + " " + Number(p[2]) + " (" + wd + ")";
+}
+function itemsByDate(){
+  var map = {};
+  mares.forEach(function(m){
+    scheduleFor(m).forEach(function(it){
+      if(!it.date) return;
+      (map[it.date] = map[it.date] || []).push(it);
+    });
+  });
+  return map;
+}
+
+function paintCal(view){
+  var td = todayStr();
+  if(!calMonth) calMonth = td.slice(0,7);
+  if(!calSel) calSel = td;
+  var map = itemsByDate();
+  var foalMap = foalingByDate();
+
+  var y = Number(calMonth.slice(0,4)), mo = Number(calMonth.slice(5,7));
+
+  var head = el("div","cal-head");
+  var prev = el("button","cal-nav","‹");
+  prev.type = "button";
+  prev.setAttribute("aria-label",tr("前の月"));
+  prev.addEventListener("click", function(){ calMonth = shiftMonth(calMonth, -1); paint(); });
+  var next = el("button","cal-nav","›");
+  next.type = "button";
+  next.setAttribute("aria-label",tr("次の月"));
+  next.addEventListener("click", function(){ calMonth = shiftMonth(calMonth, 1); paint(); });
+  head.appendChild(prev);
+  head.appendChild(el("div","cal-title",
+    LANG === "ja" ? (y + tr("年") + mo + tr("月"))
+                  : ((LANG === "hi" ? MONTHS_HI : MONTHS_EN)[mo - 1] + " " + y)));
+  head.appendChild(next);
+  view.appendChild(head);
+
+  var grid = el("div","cal-grid");
+  WD_ALL[LANG].forEach(function(w, i){
+    grid.appendChild(el("div","cal-wd" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), w));
+  });
+  var lead = new Date(y, mo-1, 1).getDay();
+  var dim = new Date(y, mo, 0).getDate();
+  for(var i = 0; i < lead; i++) grid.appendChild(el("div","cal-pad"));
+
+  for(var d = 1; d <= dim; d++){
+    (function(day){
+      var ds = y + "-" + pad(mo) + "-" + pad(day);
+      var items = map[ds] || [];
+      var pend = items.filter(function(it){ return !it.done; });
+      var cell = el("button","cal-cell");
+      cell.type = "button";
+      if(pend.length) cell.classList.add("has");
+      if(pend.length && ds < td) cell.classList.add("late");
+      if(ds === td) cell.classList.add("today");
+      if(ds === calSel) cell.classList.add("sel");
+      cell.setAttribute("aria-label", fmtFull(ds) + " " + trf("{n}頭", { n: pend.length }));
+      cell.appendChild(el("span","cal-d", String(day)));
+      cell.appendChild(el("span","cal-n", pend.length ? String(pend.length) : (items.length ? "✓" : "")));
+      if((foalMap[ds] || []).length){
+        cell.classList.add("foal");
+        cell.appendChild(el("span","cal-foal",""));
+      }
+      cell.addEventListener("click", function(){ calSel = ds; paint(); });
+      grid.appendChild(cell);
+    })(d);
+  }
+  view.appendChild(grid);
+
+  var legend = el("div","cal-legend");
+  legend.appendChild(el("span", null, tr("数字＝その日に見る頭数")));
+  legend.appendChild(el("span", null, tr("✓＝記録済み")));
+  legend.appendChild(el("span", null, tr("色つき＝未記録あり")));
+  legend.appendChild(el("span", null, tr("●＝分娩予定")));
+  view.appendChild(legend);
+
+  var sel = (map[calSel] || []).slice().sort(function(a,b){
+    if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+    return String(a.mare.horse || "").localeCompare(String(b.mare.horse || ""), "ja");
+  });
+  var foals = foalMap[calSel] || [];
+  view.appendChild(sectionHead(fmtFull(calSel), sel.length + foals.length, "件"));
+  if(!sel.length && !foals.length){
+    view.appendChild(el("div","empty",tr("この日の予定はありません。")));
+    return;
+  }
+  var s = el("div","stack");
+  foals.forEach(function(m){ s.appendChild(foalCard(m)); });
+  sel.forEach(function(it){ s.appendChild(itemCard(it)); });
+  view.appendChild(s);
+}
+
+/* ============ シート ============ */
+var sheet = document.getElementById("sheet");
+var sheetBody = document.getElementById("sheetBody");
+var sheetFoot = document.getElementById("sheetFoot");
+var sheetTitle = document.getElementById("sheetTitle");
+
+function openSheet(title){
+  sheetTitle.textContent = title;
+  sheetBody.innerHTML = "";
+  sheetFoot.innerHTML = "";
+  sheet.classList.add("open");
+}
+function closeSheet(){
+  sheet.classList.remove("open");
+  sheetBody.innerHTML = "";
+  sheetFoot.innerHTML = "";
+}
+Array.prototype.forEach.call(sheet.querySelectorAll("[data-close]"), function(b){
+  b.addEventListener("click", closeSheet);
+});
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && sheet.classList.contains("open")) closeSheet();
+});
+
+function field(label, control, hint){
+  var w = el("label","field");
+  w.appendChild(el("span","field-label",label));
+  w.appendChild(control);
+  if(hint) w.appendChild(el("span","field-hint",hint));
+  return w;
+}
+function inp(type, value, ph){
+  var i = document.createElement("input");
+  i.type = type;
+  if(value != null) i.value = value;
+  if(ph) i.placeholder = ph;
+  return i;
+}
+function sel(options, value){
+  var s = document.createElement("select");
+  options.forEach(function(o){
+    var op = document.createElement("option");
+    op.value = o; op.textContent = tr(o);
+    s.appendChild(op);
+  });
+  if(value) s.value = value;
+  return s;
+}
+function ta(value, ph){
+  var t = document.createElement("textarea");
+  if(value != null) t.value = value;
+  if(ph) t.placeholder = ph;
+  return t;
+}
+function footBtns(list){
+  list.forEach(function(b){ sheetFoot.appendChild(b); });
+}
+
+/* ----- 治療：新規 / 編集 ----- */
+function openTreatForm(t){
+  openSheet(t ? "治療の内容を編集" : tr("治療を登録"));
+
+  var horse = inp("text", t ? t.horse : "", tr("例：ブルーローズ"));
+  horse.setAttribute("list","horseNames");
+  var place = inp("text", t ? t.place : "", tr("例：1号厩舎 / 3放牧地"));
+  var problem = inp("text", t ? t.problem : "", tr("例：左前肢 蜂窩織炎"));
+  var plan = ta(t ? t.plan : "", tr("例：セファゾリン 朝夕2回、患部冷却15分、運動制限"));
+  var start = inp("date", t ? t.startDate : todayStr());
+  var status = sel(["治療中","経過観察","終了"], t ? t.status : "治療中");
+
+  sheetBody.appendChild(field(tr("馬名"), horse));
+  sheetBody.appendChild(field(tr("場所"), place));
+  sheetBody.appendChild(field(tr("症状・診断"), problem));
+  sheetBody.appendChild(field(tr("処置内容"), plan, tr("誰が見ても同じ処置ができるように書いてください")));
+  sheetBody.appendChild(field(tr("開始日"), start));
+  sheetBody.appendChild(field(tr("状態"), status));
+
+  var save = el("button","btn t",tr("保存"));
+  save.addEventListener("click", async function(){
+    if(!horse.value.trim()){ toast(tr("馬名を入力してください")); horse.focus(); return; }
+    save.disabled = true;
+    var body = {
+      horse: horse.value.trim(),
+      place: place.value.trim(),
+      problem: problem.value.trim(),
+      plan: plan.value.trim(),
+      startDate: start.value || todayStr(),
+      status: status.value,
+      updatedAt: new Date().toISOString()
+    };
+    var ok;
+    if(t){
+      body.createdBy = t.createdBy || myId || "";
+      body.createdAt = t.createdAt || new Date().toISOString();
+      ok = await guardedWrite(function(){ return db.doc("treatments/" + t.id).set(body); }, tr("保存しました"));
+    }else{
+      body.createdBy = myId || "";
+      body.createdAt = new Date().toISOString();
+      ok = await guardedWrite(function(){ return db.collection("treatments").add(body); }, tr("登録しました"));
+    }
+    save.disabled = false;
+    if(ok) closeSheet();
+  });
+  var cancel = el("button","btn",tr("やめる"));
+  cancel.addEventListener("click", closeSheet);
+  footBtns([cancel, save]);
+}
+
+/* ----- 治療：詳細 ----- */
+function openTreatDetail(id){
+  var t = treatments.filter(function(x){ return x.id === id; })[0];
+  if(!t){ closeSheet(); return; }
+  openSheet(t.horse || tr("（馬名なし）"));
+
+  var info = el("div","detail-block");
+  info.appendChild(el("h3", null, tr("症状・診断")));
+  info.appendChild(el("div",null, t.problem || tr("（未記入）")));
+  info.appendChild(el("h3", null, tr("処置内容")));
+  var planEl = el("div",null, t.plan || tr("（未記入）"));
+  planEl.style.whiteSpace = "pre-wrap";
+  info.appendChild(planEl);
+  var meta = el("div","meta");
+  meta.appendChild(el("span","chip " + (t.status==="治療中"?"t":t.status==="経過観察"?"w":"n"), tr(t.status||"治療中")));
+  if(t.place) meta.appendChild(el("span",null, t.place));
+  if(t.startDate) meta.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
+  meta.appendChild(el("span",null, trf("登録 {name}", { name: nameOf(t.createdBy) || tr("記録者不明") })));
+  info.appendChild(meta);
+  sheetBody.appendChild(info);
+
+  if(canWrite()){
+    var stBlock = el("div","detail-block");
+    stBlock.appendChild(el("h3", null, tr("状態を変える")));
+    var seg = el("div","seg");
+    ["治療中","経過観察","終了"].forEach(function(s){
+      var b = el("button", null, tr(s));
+      b.type = "button";
+      var isCurrent = ((t.status || "治療中") === s);
+      b.setAttribute("aria-pressed", isCurrent ? "true" : "false");
+      b.addEventListener("click", async function(){
+        if(isCurrent) return;
+        var all = seg.querySelectorAll("button");
+        Array.prototype.forEach.call(all, function(x){ x.disabled = true; });
+        var body = Object.assign({}, t);
+        delete body.id;
+        body.status = s;
+        body.updatedAt = new Date().toISOString();
+        var ok = await guardedWrite(function(){
+          return db.doc("treatments/" + t.id).set(body);
+        }, trf("{s}にしました", { s: tr(s) }));
+        if(ok){
+          t.status = s;
+          openTreatDetail(t.id);
+        }else{
+          Array.prototype.forEach.call(all, function(x){ x.disabled = false; });
+        }
+      });
+      seg.appendChild(b);
+    });
+    stBlock.appendChild(seg);
+    sheetBody.appendChild(stBlock);
+  }
+
+  if(t.status !== "終了" && canWrite()){
+    var addLog = el("button","btn t wide",tr("処置を記録"));
+    addLog.addEventListener("click", function(){ openLogForm(t); });
+    sheetBody.appendChild(addLog);
+  }
+
+  var lg = logsFor(id);
+  var block = el("div","detail-block");
+  block.appendChild(el("h3", null, trf("処置の記録（{n}件）", { n: lg.length })));
+  if(!lg.length){
+    block.appendChild(el("div","log-meta",tr("まだ記録がありません。")));
+  }else{
+    lg.slice(0,30).forEach(function(l){
+      var row = el("div","log");
+      row.appendChild(el("div","log-meta", byLine(l.by, l.date)));
+      row.appendChild(el("div","log-text", l.text || ""));
+      if(canWrite()){
+        var del = el("button","btn sm",tr("この記録を削除"));
+        del.style.marginTop = "6px";
+        del.addEventListener("click", async function(){
+          if(del.dataset.armed !== "1"){
+            del.dataset.armed = "1";
+            del.textContent = tr("もう一度押すと削除します");
+            setTimeout(function(){
+              if(del.dataset.armed === "1"){
+                del.dataset.armed = "0";
+                del.textContent = tr("この記録を削除");
+              }
+            }, 4000);
+            return;
+          }
+          del.disabled = true;
+          var ok = await guardedWrite(function(){ return db.doc("logs/" + l.id).delete(); }, tr("削除しました"));
+          if(ok){
+            openTreatDetail(id);
+          }else{
+            del.disabled = false;
+            del.dataset.armed = "0";
+            del.textContent = tr("この記録を削除");
+          }
+        });
+        row.appendChild(del);
+      }
+      block.appendChild(row);
+    });
+  }
+  sheetBody.appendChild(block);
+
+  var buttons = [];
+  var close = el("button","btn",tr("閉じる"));
+  close.addEventListener("click", closeSheet);
+  buttons.push(close);
+
+  if(canWrite()){
+    var edit = el("button","btn",tr("編集"));
+    edit.addEventListener("click", function(){ openTreatForm(t); });
+    buttons.push(edit);
+  }
+  footBtns(buttons);
+}
+
+/* ----- 処置記録 ----- */
+function openLogForm(t){
+  openSheet(trf("{horse}の処置を記録", { horse: t.horse }));
+  var date = inp("date", todayStr());
+  var text = ta("", tr("例：抗生剤投与、患部の腫れ軽減、歩様やや改善"));
+  sheetBody.appendChild(field(tr("実施日"), date));
+  sheetBody.appendChild(field(tr("実施した内容・馬の様子"), text));
+
+  var save = el("button","btn t",tr("記録する"));
+  save.addEventListener("click", async function(){
+    if(!text.value.trim()){ toast(tr("内容を入力してください")); text.focus(); return; }
+    save.disabled = true;
+    var ok = await guardedWrite(function(){
+      return db.collection("logs").add({
+        treatmentId: t.id,
+        date: date.value || todayStr(),
+        text: text.value.trim(),
+        by: myId || "",
+        at: new Date().toISOString()
+      });
+    }, tr("記録しました"));
+    save.disabled = false;
+    if(ok) openTreatDetail(t.id);
+  });
+  var back = el("button","btn",tr("やめる"));
+  back.addEventListener("click", function(){ openTreatDetail(t.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 繁殖：新規 / 編集 ----- */
+function renderPreview(box, foaling, breeding){
+  box.innerHTML = "";
+  var any = false;
+  if(foaling){
+    var d0 = addDays(foaling, foalOffset());
+    if(d0){
+      any = true;
+      var r0 = el("div","prow");
+      r0.appendChild(el("span","prow-label", trl(foalLabelJa())));
+      r0.appendChild(el("span","prow-date", fmtDate(d0)));
+      box.appendChild(r0);
+    }
+  }
+  if(breeding){
+    breedSteps().forEach(function(s){
+      var d = addDays(breeding, s[0]);
+      if(!d) return;
+      any = true;
+      var r = el("div","prow");
+      r.appendChild(el("span","prow-label", trl(s[1])));
+      r.appendChild(el("span","prow-date", fmtDate(d)));
+      box.appendChild(r);
+    });
+  }
+  if(breeding){
+    var fd1 = addDays(breeding, gestationDays());
+    if(fd1){
+      any = true;
+      var rf = el("div","prow");
+      rf.appendChild(el("span","prow-label", tr("分娩予定（受胎した場合）")));
+      rf.appendChild(el("span","prow-date", fmtDate(fd1)));
+      box.appendChild(rf);
+    }
+  }
+  if(!any) box.appendChild(el("div","prow-empty",tr("分娩日か種付日を入れると、予定日がここに出ます。")));
+}
+
+function openMareForm(m){
+  openSheet(m ? "繁殖情報を編集" : tr("繁殖牝馬を登録"));
+  var horse = inp("text", m ? m.horse : "", tr("例：ブルーローズ"));
+  horse.setAttribute("list","horseNames");
+  var place = inp("text", m ? m.place : "", tr("例：1号厩舎 / 3放牧地"));
+  var foaling = inp("date", m ? (m.foalingDate || "") : "");
+  var breeding = inp("date", m ? (m.breedingDate || "") : "");
+  var stallion = inp("text", m ? (m.stallion || "") : "", tr("例：キングカメハメハ"));
+  stallion.setAttribute("list","stallionNames");
+  var note = ta(m ? (m.note || "") : "", tr("例：気性が激しい。左後肢に古い傷"));
+  var cat = sel(CATEGORY_OPTS, (m && m.category) ? m.category : null);
+
+  sheetBody.appendChild(field(tr("馬名"), horse));
+  sheetBody.appendChild(field(tr("区分"), cat));
+  sheetBody.appendChild(field(tr("場所"), place));
+  sheetBody.appendChild(field(tr("分娩日"), foaling, trf("分娩後{n}日の直検日が出ます", { n: foalOffset() })));
+  sheetBody.appendChild(field(tr("種付日"), breeding, tr("空欄でOK。直検で決まってから入れられます")));
+  sheetBody.appendChild(field(tr("種牡馬"), stallion));
+
+  var mDate = inp("date", (m && m.manual) ? (m.manual.date || "") : "");
+  var mLabel = inp("text", (m && m.manual) ? (m.manual.label || "") : "", tr("例：卵胞確認、再検"));
+  sheetBody.appendChild(field(tr("次の直検日（手入力）"), mDate, tr("入れるとこの日が「次の直検」になります。空欄なら計算どおり")));
+  sheetBody.appendChild(field(tr("その直検の内容"), mLabel));
+
+  var box = el("div","preview");
+  var wrap = el("div","detail-block");
+  wrap.appendChild(el("h3", null, tr("自動で出る予定日")));
+  wrap.appendChild(box);
+  sheetBody.appendChild(wrap);
+  sheetBody.appendChild(field(tr("個体メモ"), note, tr("気性や持病など、この馬について残しておきたいこと")));
+
+  function upd(){ renderPreview(box, foaling.value, breeding.value); }
+  foaling.addEventListener("change", upd);
+  breeding.addEventListener("change", upd);
+  foaling.addEventListener("input", upd);
+  breeding.addEventListener("input", upd);
+  upd();
+
+  var save = el("button","btn e",tr("保存"));
+  save.addEventListener("click", async function(){
+    if(!horse.value.trim()){ toast(tr("馬名を入力してください")); horse.focus(); return; }
+    save.disabled = true;
+    var body = {
+      horse: horse.value.trim(),
+      place: place.value.trim(),
+      foalingDate: foaling.value || "",
+      breedingDate: breeding.value || "",
+      stallion: stallion.value.trim(),
+      category: (cat.value === "未選択") ? "" : cat.value,
+      note: note.value.trim(),
+      manual: mDate.value ? {
+        date: mDate.value,
+        label: mLabel.value.trim(),
+        memo: (m && m.manual) ? (m.manual.memo || "") : ""
+      } : null,
+      done: m ? (m.done || {}) : {},
+      others: m ? (m.others || []) : [],
+      createdBy: m ? (m.createdBy || myId || "") : (myId || ""),
+      createdAt: m ? (m.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    var ok;
+    if(m) ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("保存しました"));
+    else  ok = await guardedWrite(function(){ return db.collection("mares").add(body); }, tr("登録しました"));
+    save.disabled = false;
+    if(ok) closeSheet();
+  });
+  var cancel = el("button","btn",tr("やめる"));
+  cancel.addEventListener("click", closeSheet);
+  footBtns([cancel, save]);
+}
+
+/* ----- 繁殖：詳細 ----- */
+function openMareDetail(id){
+  var m = mares.filter(function(v){ return v.id === id; })[0];
+  if(!m){ closeSheet(); return; }
+  openSheet(m.horse || tr("（馬名なし）"));
+
+  var info = el("div","detail-block");
+  var stHead = el("div","sched-row");
+  stHead.appendChild(el("h3", null, tr("基準の日付")));
+  var stNow = mareStatus(m);
+  stHead.appendChild(el("span","chip " + statusChipClass(stNow), tr(stNow)));
+  info.appendChild(stHead);
+  var g = el("div","rows");
+  g.appendChild(el("div","row-label",tr("分娩日")));
+  g.appendChild(el("div","row-value", m.foalingDate ? fmtDate(m.foalingDate) : tr("未入力")));
+  g.appendChild(el("div","row-label",tr("種付日")));
+  g.appendChild(el("div","row-value", m.breedingDate ? fmtDate(m.breedingDate) : tr("未入力")));
+  if(m.stallion){
+    g.appendChild(el("div","row-label", tr("種牡馬")));
+    g.appendChild(el("div","row-value", m.stallion));
+  }
+  var fdue = expectedFoaling(m);
+  if(fdue){
+    g.appendChild(el("div","row-label",tr("分娩予定")));
+    g.appendChild(el("div","row-value",
+      trf("{d}（種付から{n}日）", { d: fmtDate(fdue), n: gestationDays() })));
+  }
+  info.appendChild(g);
+  if(m.place) info.appendChild(el("div","log-meta", m.place));
+  sheetBody.appendChild(info);
+
+  var cb = el("div","detail-block");
+  var ch = el("div","sched-row");
+  ch.appendChild(el("h3", null, tr("区分")));
+  if(canWrite()){
+    var cEdit = el("button","btn sm", tr(catOf(m) ? "変更" : "選ぶ"));
+    cEdit.addEventListener("click", function(){ openCategoryForm(m); });
+    ch.appendChild(cEdit);
+  }
+  cb.appendChild(ch);
+  if(catOf(m)){
+    var cv = el("div", null, tr(catOf(m)));
+    cv.style.marginTop = "4px";
+    cb.appendChild(cv);
+  }else{
+    cb.appendChild(el("div","log-meta", tr("まだ選んでいません。")));
+  }
+  sheetBody.appendChild(cb);
+
+  var nb = el("div","detail-block");
+  var nh = el("div","sched-row");
+  nh.appendChild(el("h3", null, tr("個体メモ")));
+  if(canWrite()){
+    var nEdit = el("button","btn sm", tr(m.note ? "編集" : "書く"));
+    nEdit.addEventListener("click", function(){ openNoteForm(m); });
+    nh.appendChild(nEdit);
+  }
+  nb.appendChild(nh);
+  if(m.note){
+    var nn = el("div", null, m.note);
+    nn.style.whiteSpace = "pre-wrap";
+    nn.style.marginTop = "4px";
+    nb.appendChild(nn);
+  }else{
+    nb.appendChild(el("div","log-meta", tr("まだ記入がありません。")));
+  }
+  sheetBody.appendChild(nb);
+
+  var sch = scheduleFor(m);
+  var pend = sch.filter(function(it){ return !it.done; });
+
+  var pb = el("div","detail-block");
+  pb.appendChild(el("h3", null, tr("これからの予定")));
+  if(!pend.length){
+    pb.appendChild(el("div","log-meta",tr("予定はありません。分娩日か種付日を入れてください。")));
+  }else{
+    pend.forEach(function(it){
+      var row = el("div","log");
+      var top = el("div","sched-row");
+      var left = el("div");
+      left.appendChild(el("div",null, fmtDate(it.date) + "　" + trl(it.label)));
+      left.appendChild(el("div","log-meta",
+        tr(it.kind)
+        + (it.manual ? tr(" ・") + tr("手入力") : "")
+        + (it.manual && m.manual && m.manual.memo ? tr(" ・ ") + m.manual.memo : "")
+        + (it.other && it.other.memo ? tr(" ・ ") + it.other.memo : "")));
+      top.appendChild(left);
+      top.appendChild(dueChip(it.date));
+      row.appendChild(top);
+      if(canWrite()){
+        var b = el("button","btn sm",tr("実施を記録"));
+        b.style.marginTop = "6px";
+        b.addEventListener("click", function(){ openItemResult(m, it); });
+        row.appendChild(b);
+      }
+      pb.appendChild(row);
+    });
+  }
+  sheetBody.appendChild(pb);
+
+  if(canWrite()){
+    var actions = el("div","btn-row");
+    var addManual = el("button","btn e",tr("次の直検日を手入力"));
+    addManual.addEventListener("click", function(){ openManualForm(m); });
+    actions.appendChild(addManual);
+    var addBreed = el("button","btn", m.breedingDate ? tr("種付日を変更") : tr("種付日を入力"));
+    addBreed.addEventListener("click", function(){ openBreedingForm(m); });
+    actions.appendChild(addBreed);
+    sheetBody.appendChild(actions);
+  }
+
+  var hk = Object.keys(m.done || {});
+  if(hk.length){
+    var hb = el("div","detail-block");
+    hb.appendChild(el("h3", null, trf("実施した記録（{n}件）", { n: hk.length })));
+    hk.map(function(k){
+      var o = Object.assign({}, m.done[k]);
+      o.key = k;
+      return o;
+    }).sort(function(a,b){
+      return String(b.date).localeCompare(String(a.date));
+    }).slice(0,30).forEach(function(d){
+      var row = el("div","log");
+      row.appendChild(el("div","log-meta", fmtDate(d.date) + tr(" ・ ") + trl(d.label || "") + tr(" ・ ") + (nameOf(d.by) || tr("記録者不明"))));
+      row.appendChild(el("div","log-text", doneText(d) + (d.memo ? "\n" + d.memo : "")));
+      if(canWrite()){
+        var acts = el("div","btn-row");
+        acts.style.marginTop = "6px";
+        var redo = el("button","btn sm",tr("直す"));
+        redo.addEventListener("click", function(){
+          openItemResult(m, { key: d.key, kind: d.kind, label: d.label,
+                              date: d.date, mare: m, done: d });
+        });
+        acts.appendChild(redo);
+        var undo = el("button","btn sm",tr("取り消す"));
+        undo.addEventListener("click", async function(){
+          undo.disabled = true;
+          var body = Object.assign({}, m);
+          delete body.id;
+          var nd = Object.assign({}, body.done || {});
+          delete nd[d.key];
+          body.done = nd;
+          body.updatedAt = new Date().toISOString();
+          var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("取り消しました"));
+          if(ok){ m.done = nd; openMareDetail(m.id); }
+          else undo.disabled = false;
+        });
+        acts.appendChild(undo);
+        row.appendChild(acts);
+      }
+      hb.appendChild(row);
+    });
+    sheetBody.appendChild(hb);
+  }
+
+  if(canWrite()){
+    var danger = el("div","detail-block");
+    danger.style.marginTop = "18px";
+    danger.appendChild(el("h3", null, tr("この馬を削除")));
+    danger.appendChild(el("div","log-meta",
+      tr("この馬の直検・妊娠鑑定の記録もすべて消えます。元に戻せません。間違えて登録したときだけお使いください。")));
+    var del = el("button","btn wide", tr("この馬を削除"));
+    del.style.marginTop = "10px";
+    del.addEventListener("click", async function(){
+      if(del.dataset.armed !== "1"){
+        del.dataset.armed = "1";
+        del.textContent = tr("もう一度押すと削除します");
+        setTimeout(function(){
+          if(del.dataset.armed === "1"){
+            del.dataset.armed = "0";
+            del.textContent = tr("この馬を削除");
+          }
+        }, 5000);
+        return;
+      }
+      del.disabled = true;
+      del.textContent = tr("削除しています…");
+      var ok = await guardedWrite(function(){
+        return db.doc("mares/" + m.id)["delete"]();
+      }, tr("削除しました"));
+      if(ok){
+        closeSheet();
+      }else{
+        del.disabled = false;
+        del.dataset.armed = "0";
+        del.textContent = tr("この馬を削除");
+      }
+    });
+    danger.appendChild(del);
+    sheetBody.appendChild(danger);
+  }
+
+  var buttons = [];
+  var close = el("button","btn",tr("閉じる"));
+  close.addEventListener("click", closeSheet);
+  buttons.push(close);
+  if(canWrite()){
+    var edit = el("button","btn",tr("繁殖情報を編集"));
+    edit.addEventListener("click", function(){ openMareForm(m); });
+    buttons.push(edit);
+  }
+  footBtns(buttons);
+}
+
+/* ----- 実施の記録 ----- */
+var RESULT_SETS = {
+  "妊娠鑑定": ["受胎","不受胎","その他"],
+  "その他処置": ["実施","中止","その他"]
+};
+/* 繁殖牝馬の区分 */
+var CATEGORY_OPTS = ["未選択","上がり","不受胎馬","子付き"];
+function catOf(m){
+  var c = m && m.category;
+  return (c && c !== "未選択") ? c : "";
+}
+/* 馬名の行。区分と場所を名前の横に出す */
+function horseLine(m){
+  var h = el("div","horse", m.horse || tr("（馬名なし）"));
+  var c = catOf(m);
+  if(c) h.appendChild(el("span","hcat", tr(c)));
+  if(m.place) h.appendChild(el("span","place", m.place));
+  return h;
+}
+
+/* 卵胞ボタンの並び（未入力・なし・0.5〜6.0cm） */
+var SIZE_OPTS = (function(){
+  var a = [{ v:"", label:"未入力" }, { v:"0", label:"なし" }];
+  for(var i = 1; i <= 12; i++){ var n = (i * 0.5).toFixed(1); a.push({ v:n, label:n }); }
+  return a;
+})();
+
+/* 片側の卵巣。卵胞の大きさと黄体をひとまとめに選ぶ */
+function ovaryColumn(titleKey, initSize, initCl){
+  var col = el("div","ovary");
+  var state = { size: initSize || "", cl: !!initCl };
+
+  /* 見出しを押すと大きさの一覧が開く */
+  var head = el("button","ovary-toggle");
+  head.type = "button";
+  head.setAttribute("aria-expanded","false");
+  head.appendChild(el("span","ot-title", tr(titleKey)));
+  var val = el("span","ot-val ot-empty");
+  var valText = el("span", null, "—");
+  var arrow = el("span","ot-arrow","▼");
+  val.appendChild(valText);
+  val.appendChild(arrow);
+  head.appendChild(val);
+  col.appendChild(head);
+
+  function showValue(o){
+    if(!o || o.v === ""){
+      valText.textContent = "—";
+      val.className = "ot-val ot-empty";
+    }else{
+      valText.textContent = (o.v === "0") ? tr("なし") : (o.label + "cm");
+      val.className = "ot-val";
+    }
+  }
+  function setOpen(open){
+    head.setAttribute("aria-expanded", open ? "true" : "false");
+    grid.hidden = !open;
+  }
+  head.addEventListener("click", function(){
+    setOpen(grid.hidden);
+  });
+
+  var grid = el("div","sizes");
+
+  var clBtn = el("button","cl-btn", tr("黄体"));
+  clBtn.type = "button";
+  clBtn.setAttribute("aria-pressed", state.cl ? "true" : "false");
+  clBtn.addEventListener("click", function(){
+    state.cl = !state.cl;
+    clBtn.setAttribute("aria-pressed", state.cl ? "true" : "false");
+  });
+  col.appendChild(clBtn);
+
+  var btns = [];
+  SIZE_OPTS.forEach(function(o){
+    var b = el("button","size-btn", tr(o.label));
+    b.type = "button";
+    b.setAttribute("aria-pressed","false");
+    b.addEventListener("click", function(){
+      state.size = o.v;
+      btns.forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      showValue(o);
+      setOpen(false);
+    });
+    btns.push(b);
+    grid.appendChild(b);
+  });
+  var init = 0;
+  for(var k = 0; k < SIZE_OPTS.length; k++){
+    if(SIZE_OPTS[k].v === state.size){ init = k; break; }
+  }
+  btns[init].setAttribute("aria-pressed","true");
+  showValue(SIZE_OPTS[init]);
+  grid.hidden = true;
+  col.appendChild(grid);
+  return { el: col, state: state };
+}
+
+/* 記録された直検の内容を、画面の言語で1行にする */
+function doneText(d){
+  if(!d) return "";
+  if(d.lf || d.rf || d.cl){
+    var p = [];
+    if(d.lf) p.push(trf("左{v}cm", { v: d.lf }));
+    if(d.rf) p.push(trf("右{v}cm", { v: d.rf }));
+    if(d.cl) p.push(tr("黄体") + " " + tr(d.cl));
+    return p.join("　");
+  }
+  return tr(d.result || "記録済");
+}
+function openItemResult(m, it){
+  var prev = it.done || null;   /* 記録済みを開き直したとき */
+  openSheet(m.horse + "　" + trl(it.label));
+  var when = inp("date", (prev && prev.date) || it.date || todayStr());
+  var isExam = (it.kind === "直検");
+  var result = null, lf = null, rf = null;
+  sheetBody.appendChild(field(tr("実施日"), when));
+
+  if(isExam){
+    var pc = prev ? (prev.cl || "") : "";
+    lf = ovaryColumn("左卵胞", prev ? prev.lf : "", pc === "左" || pc === "両側");
+    rf = ovaryColumn("右卵胞", prev ? prev.rf : "", pc === "右" || pc === "両側");
+    var ov = el("div","ovaries");
+    ov.appendChild(lf.el);
+    ov.appendChild(rf.el);
+    sheetBody.appendChild(ov);
+    sheetBody.appendChild(el("div","ovary-note", tr("左卵胞・右卵胞を押すと大きさを選べます（単位はcm）")));
+  }else{
+    result = sel(RESULT_SETS[it.kind] || ["実施"], prev ? prev.result : null);
+    sheetBody.appendChild(field(tr("結果"), result));
+  }
+
+  var memo = ta(prev ? (prev.memo || "") : "",
+    tr(isExam ? "例：子宮に浮腫あり。2日後に再検" : "例：単胎、左子宮角。次回4週で再検"));
+  sheetBody.appendChild(field(tr("所見・申し送り"), memo));
+
+  var bDate = null, bStallion = null;
+  if(it.kind !== "その他処置"){
+    bDate = inp("date", "");
+    sheetBody.appendChild(field(tr("種付日（この直検で種付が決まったら）"), bDate,
+      trf("空欄でかまいません。入れるとその日から{steps}の鑑定日が出ます", { steps: stepsLabel() })));
+    bStallion = inp("text", "", tr("例：キングカメハメハ"));
+    bStallion.setAttribute("list","stallionNames");
+    sheetBody.appendChild(field(tr("種牡馬"), bStallion));
+  }
+
+  /* 飛ばした回も記録として残し、予定からは外す */
+  var skipBox = el("div","detail-block");
+  skipBox.style.marginTop = "14px";
+  var skipBtn = el("button","btn wide", tr("この回は飛ばす"));
+  skipBtn.addEventListener("click", function(){ commit(true, skipBtn); });
+  skipBox.appendChild(skipBtn);
+  skipBox.appendChild(el("div","log-meta",
+    tr("都合で実施しなかったときに押します。予定一覧から外れ、記録には「未実施」として残ります。あとで取り消せます。")));
+  sheetBody.appendChild(skipBox);
+
+  async function commit(skip, btn){
+    btn.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    var nd = Object.assign({}, body.done || {});
+    var rec = {
+      label: it.label,
+      kind: it.kind,
+      date: when.value || todayStr(),
+      memo: memo.value.trim(),
+      by: myId || "",
+      at: new Date().toISOString()
+    };
+    if(skip){
+      rec.result = "未実施";
+    }else if(isExam){
+      var vl = lf.state.size;
+      var vr = rf.state.size;
+      var vc = (lf.state.cl && rf.state.cl) ? "両側" : lf.state.cl ? "左" : rf.state.cl ? "右" : "";
+      rec.lf = vl; rec.rf = vr; rec.cl = vc;
+      var parts = [];
+      if(vl) parts.push("左" + vl + "cm");
+      if(vr) parts.push("右" + vr + "cm");
+      if(vc) parts.push("黄体" + vc);
+      rec.result = parts.join(" ");
+    }else{
+      rec.result = result.value;
+    }
+    nd[it.key] = rec;
+    body.done = nd;
+    if(!skip && bDate && bDate.value){
+      body.breedingDate = bDate.value;
+      if(bStallion && bStallion.value.trim()) body.stallion = bStallion.value.trim();
+    }
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); },
+      tr(skip ? "飛ばしました" : prev ? "保存しました" : "記録しました"));
+    btn.disabled = false;
+    if(ok){
+      m.done = nd;
+      if(!skip && bDate && bDate.value){ m.breedingDate = body.breedingDate; m.stallion = body.stallion; m.manual = body.manual; }
+      openMareDetail(m.id);
+    }
+  }
+
+  var save = el("button","btn e", tr(prev ? "保存" : "実施済にする"));
+  save.addEventListener("click", function(){ commit(false, save); });
+  var back = el("button","btn",tr("やめる"));
+  back.addEventListener("click", function(){ openMareDetail(m.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 個体メモ ----- */
+function openNoteForm(m){
+  openSheet(trf("{horse}の個体メモ", { horse: m.horse }));
+  var note = ta(m.note || "", tr("例：気性が激しい。左後肢に古い傷"));
+  sheetBody.appendChild(field(tr("個体メモ"), note,
+    tr("気性や持病など、この馬について残しておきたいこと")));
+
+  var save = el("button","btn e", tr("保存"));
+  save.addEventListener("click", async function(){
+    save.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    body.note = note.value.trim();
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("保存しました"));
+    save.disabled = false;
+    if(ok){ m.note = body.note; openMareDetail(m.id); }
+  });
+  var back = el("button","btn", tr("やめる"));
+  back.addEventListener("click", function(){ openMareDetail(m.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 区分の変更 ----- */
+function openCategoryForm(m){
+  openSheet(trf("{horse}の区分", { horse: m.horse }));
+  var cur = catOf(m) || "未選択";
+  var rows = [];
+  var block = el("div","detail-block");
+  block.appendChild(el("h3", null, tr("区分")));
+  function repaint(){
+    rows.forEach(function(r){
+      var on = r.opt === cur;
+      r.el.setAttribute("aria-pressed", on ? "true" : "false");
+      r.state.textContent = on ? tr("これ") : tr("選ぶ");
+    });
+  }
+  CATEGORY_OPTS.forEach(function(opt){
+    var row = el("button","toggle-row");
+    row.type = "button";
+    row.appendChild(el("span","toggle-label", tr(opt)));
+    var state = el("span","toggle-state", "");
+    row.appendChild(state);
+    row.addEventListener("click", function(){ cur = opt; repaint(); });
+    rows.push({ opt: opt, el: row, state: state });
+    block.appendChild(row);
+  });
+  repaint();
+  block.appendChild(el("div","log-meta", tr("馬名の横に表示されます。")));
+  sheetBody.appendChild(block);
+
+  var save = el("button","btn e", tr("保存"));
+  save.addEventListener("click", async function(){
+    save.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    body.category = (cur === "未選択") ? "" : cur;
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("保存しました"));
+    save.disabled = false;
+    if(ok){ m.category = body.category; openMareDetail(m.id); }
+  });
+  var back = el("button","btn", tr("やめる"));
+  back.addEventListener("click", function(){ openMareDetail(m.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 種付日の登録 ----- */
+function openBreedingForm(m){
+  openSheet(trf("{horse}の種付日", { horse: m.horse }));
+  var date = inp("date", m.breedingDate || todayStr());
+  sheetBody.appendChild(field(tr("種付日"), date, trf("この日から{steps}の鑑定日が出ます", { steps: stepsLabel() })));
+  var st2 = inp("text", m.stallion || "", tr("例：キングカメハメハ"));
+  st2.setAttribute("list","stallionNames");
+  sheetBody.appendChild(field(tr("種牡馬"), st2));
+
+  var box = el("div","preview");
+  var wrap = el("div","detail-block");
+  wrap.appendChild(el("h3", null, tr("妊娠鑑定の予定日")));
+  wrap.appendChild(box);
+  sheetBody.appendChild(wrap);
+
+  function upd(){ renderPreview(box, "", date.value); }
+  date.addEventListener("change", upd);
+  date.addEventListener("input", upd);
+  upd();
+
+  if(m.breedingDate){
+    sheetBody.appendChild(el("div","log-meta",
+      trf("今の種付日は {d} です。日付を変えると、新しい日を基準に鑑定日を引き直します。前の記録は履歴に残ります。",
+          { d: fmtDate(m.breedingDate) })));
+  }
+
+  var save = el("button","btn e",tr("保存"));
+  save.addEventListener("click", async function(){
+    if(!date.value){ toast(tr("種付日を入れてください")); date.focus(); return; }
+    save.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    body.breedingDate = date.value;
+    body.stallion = st2.value.trim();
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("種付日を登録しました"));
+    save.disabled = false;
+    if(ok){
+      m.breedingDate = body.breedingDate;
+      m.stallion = body.stallion;
+      m.manual = body.manual;
+      openMareDetail(m.id);
+    }
+  });
+  var back = el("button","btn",tr("やめる"));
+  back.addEventListener("click", function(){ openMareDetail(m.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 次の直検日を手入力 ----- */
+function openManualForm(m){
+  openSheet(trf("{horse}の次の直検日", { horse: m.horse }));
+  var date = inp("date", (m.manual && m.manual.date) || todayStr());
+  var label = inp("text", (m.manual && m.manual.label) || "", tr("例：卵胞確認、再検、子宮洗浄後"));
+  var memo = ta((m.manual && m.manual.memo) || "", tr("申し送りがあれば"));
+  sheetBody.appendChild(field(tr("次の直検日"), date, tr("計算した日付より、この日が優先して「次の直検」に出ます")));
+  sheetBody.appendChild(field(tr("内容"), label));
+  sheetBody.appendChild(field(tr("メモ"), memo));
+
+  var save = el("button","btn e",tr("保存"));
+  save.addEventListener("click", async function(){
+    if(!date.value){ toast(tr("日付を入れてください")); date.focus(); return; }
+    save.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    var man = { date: date.value, label: label.value.trim(), memo: memo.value.trim() };
+    body.manual = man;
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("保存しました"));
+    save.disabled = false;
+    if(ok){ m.manual = man; openMareDetail(m.id); }
+  });
+  var clear = el("button","btn", m.manual && m.manual.date ? tr("手入力を消す") : tr("やめる"));
+  clear.addEventListener("click", async function(){
+    if(!(m.manual && m.manual.date)){ openMareDetail(m.id); return; }
+    clear.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    body.manual = null;
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("手入力の予定を消しました"));
+    if(ok){ m.manual = null; openMareDetail(m.id); }
+    else clear.disabled = false;
+  });
+  footBtns([clear, save]);
+}
+
+/* ----- その他処置の追加 ----- */
+function openOtherForm(m){
+  openSheet(trf("{horse}のその他処置", { horse: m.horse }));
+  var date = inp("date", todayStr());
+  var title = inp("text", "", tr("例：ワクチン、削蹄、駆虫"));
+  var memo = ta("", tr("補足があれば"));
+  sheetBody.appendChild(field(tr("予定日"), date));
+  sheetBody.appendChild(field(tr("内容"), title));
+  sheetBody.appendChild(field(tr("メモ"), memo));
+
+  var save = el("button","btn e",tr("追加する"));
+  save.addEventListener("click", async function(){
+    if(!title.value.trim()){ toast(tr("内容を入力してください")); title.focus(); return; }
+    save.disabled = true;
+    var body = Object.assign({}, m);
+    delete body.id;
+    var arr = (body.others || []).slice();
+    arr.push({
+      id: "o" + Date.now() + Math.floor(Math.random()*1000),
+      date: date.value || todayStr(),
+      title: title.value.trim(),
+      memo: memo.value.trim(),
+      by: myId || ""
+    });
+    body.others = arr;
+    body.updatedAt = new Date().toISOString();
+    var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("追加しました"));
+    save.disabled = false;
+    if(ok){ m.others = arr; openMareDetail(m.id); }
+  });
+  var back = el("button","btn",tr("やめる"));
+  back.addEventListener("click", function(){ openMareDetail(m.id); });
+  footBtns([back, save]);
+}
+
+/* ----- 設定 ----- */
+function showArchive(box, lead, r){
+  box.innerHTML = "";
+  if(!r || !r.url){ box.textContent = lead; return; }
+  box.appendChild(document.createTextNode(lead));
+  var a = document.createElement("a");
+  a.href = r.url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.textContent = r.name || tr("保存したファイル");
+  a.style.color = "var(--exam)";
+  box.appendChild(a);
+}
+
+function openSettings(){
+  openSheet(tr("予定の設定"));
+  var editable = canWrite();
+
+  var fo = inp("number", String(foalOffset()));
+  fo.min = "1"; fo.max = "60";
+  fo.disabled = !editable;
+  sheetBody.appendChild(field(tr("分娩後の初回直検"), fo, tr("分娩日から何日目に直検するか。既定は8日です")));
+
+  var gd = inp("number", String(gestationDays()));
+  gd.min = "200"; gd.max = "399";
+  gd.disabled = !editable;
+  sheetBody.appendChild(field(tr("妊娠期間"), gd, tr("種付日から何日目を分娩予定日にするか。既定は340日です")));
+
+  var block = el("div","detail-block");
+  block.appendChild(el("h3", null, tr("妊娠鑑定でつくる予定")));
+  var picks = {};
+  ALL_STEPS.forEach(function(s){
+    var on = stepOn(s[0]);
+    picks[s[0]] = function(){ return on; };
+    var row = el("button","toggle-row");
+    row.type = "button";
+    row.setAttribute("aria-pressed", on ? "true" : "false");
+    row.appendChild(el("span","toggle-label", trf("{label}（種付後{n}日）", { label: trl(s[1]), n: s[0] })));
+    var state = el("span","toggle-state", on ? tr("使う") : tr("使わない"));
+    row.appendChild(state);
+    row.addEventListener("click", function(){
+      if(!editable){ toast(tr("このアカウントでは変更できません")); return; }
+      on = !on;
+      row.setAttribute("aria-pressed", on ? "true" : "false");
+      state.textContent = on ? tr("使う") : tr("使わない");
+    });
+    block.appendChild(row);
+  });
+  block.appendChild(el("div","log-meta",
+    tr("チェックを外した項目は、これから先の予定に出なくなります。すでに記録した結果は履歴に残ります。この設定はこのボードを見る全員に共通です。")));
+  sheetBody.appendChild(block);
+
+  if(editable){
+    var pw = el("div","detail-block");
+    pw.appendChild(el("h3", null, tr("合言葉")));
+    var np = inp("password", "", tr("新しい合言葉"));
+    pw.appendChild(field(tr("新しい合言葉"), np, tr("空欄のまま保存すると、合言葉なし（URLを知っていれば誰でも開ける）に戻ります")));
+    var pwNote = el("div","log-meta",
+      tr("合言葉を決めると、ボードを開くときに聞かれるようになります。")
+      + tr("変更したときは、従業員の方に新しい合言葉を伝えてください。")
+      + tr("この合言葉は画面の鍵で、データそのものの鍵ではありません。"));
+    pw.appendChild(pwNote);
+    var pwBtn = el("button","btn wide",tr("合言葉を保存する"));
+    pwBtn.style.marginTop = "10px";
+    pwBtn.addEventListener("click", async function(){
+      pwBtn.disabled = true;
+      pwBtn.textContent = tr("保存しています…");
+      try{
+        var v = np.value.trim();
+        var r = await callServer("setPasscode", v);
+        setPasscodeLocal(v);
+        toast(r && r.hasPass ? tr("合言葉を設定しました") : tr("合言葉を解除しました"));
+        np.value = "";
+      }catch(e){
+        toast(tr("保存できませんでした"));
+      }
+      pwBtn.disabled = false;
+      pwBtn.textContent = tr("合言葉を保存する");
+    });
+    pw.appendChild(pwBtn);
+    sheetBody.appendChild(pw);
+
+    var season = el("div","detail-block");
+    season.appendChild(el("h3", null, tr("年度の管理")));
+
+    var lbl = inp("text", String(new Date().getFullYear()), tr("例：2026"));
+    season.appendChild(field(tr("年度の名前"), lbl, tr("保存するファイルの名前に使います")));
+
+    var keep = true;
+    var keepRow = el("button","toggle-row");
+    keepRow.type = "button";
+    keepRow.setAttribute("aria-pressed","true");
+    keepRow.appendChild(el("span","toggle-label",tr("馬名と場所を引き継ぐ")));
+    var keepState = el("span","toggle-state", tr("引き継ぐ"));
+    keepRow.appendChild(keepState);
+    keepRow.addEventListener("click", function(){
+      keep = !keep;
+      keepRow.setAttribute("aria-pressed", keep ? "true" : "false");
+      keepState.textContent = keep ? tr("引き継ぐ") : tr("引き継がない");
+    });
+    season.appendChild(keepRow);
+
+    var snote = el("div","log-meta",
+      tr("「保存する」は今の記録をコピーして別ファイルに残します。アプリのデータはそのままです。")
+      + tr("「新しいシーズンを始める」は、保存したうえで分娩日・種付日・直検の記録を消します。治療の記録は消えません。"));
+    snote.style.marginTop = "10px";
+    season.appendChild(snote);
+
+    var snote2 = el("div","log-meta",
+      tr("この2つは電波のあるときだけ使えます。新しい画面が開き、そこで確認してから実行されます。"));
+    snote2.style.marginTop = "6px";
+    season.appendChild(snote2);
+
+    function openSeasonPage(act){
+      var u = SEASON_URL
+        + "?farm=" + encodeURIComponent(FARM)
+        + "&do=" + encodeURIComponent(act)
+        + "&label=" + encodeURIComponent(lbl.value.trim() || String(new Date().getFullYear()))
+        + "&keep=" + (keep ? "1" : "0");
+      window.open(u, "_blank");
+    }
+
+    var b1 = el("button","btn wide",tr("今の記録を保存する"));
+    b1.style.marginTop = "10px";
+    b1.addEventListener("click", function(){
+      if(fromCache){ toast(tr("電波のある場所でお試しください")); return; }
+      openSeasonPage("archive");
+    });
+    season.appendChild(b1);
+
+    var b2 = el("button","btn wide",tr("新しいシーズンを始める"));
+    b2.style.marginTop = "8px";
+    b2.addEventListener("click", function(){
+      if(fromCache){ toast(tr("電波のある場所でお試しください")); return; }
+      openSeasonPage("newseason");
+    });
+    season.appendChild(b2);
+
+    sheetBody.appendChild(season);
+  }
+
+  var buttons = [];
+  var close = el("button","btn",tr("閉じる"));
+  close.addEventListener("click", closeSheet);
+  buttons.push(close);
+
+  if(editable){
+    var save = el("button","btn e",tr("保存"));
+    save.addEventListener("click", async function(){
+      save.disabled = true;
+      var n = Number(fo.value);
+      var g2 = Number(gd.value);
+      var body = {
+        foalOffset: (n > 0 && n < 100) ? n : 8,
+        gestation: (g2 > 200 && g2 < 400) ? g2 : 340,
+        steps: {}
+      };
+      ALL_STEPS.forEach(function(s){ body.steps[String(s[0])] = !!picks[s[0]](); });
+      var ok = await guardedWrite(function(){ return db.doc("settings/schedule").set(body); }, tr("設定を保存しました"));
+      save.disabled = false;
+      if(ok){ settings = body; closeSheet(); }
+    });
+    buttons.push(save);
+  }
+  footBtns(buttons);
+}
+document.getElementById("settingsBtn").addEventListener("click", function(){
+  openSettings();
+});
+
+/* ============ タブ ============ */
+document.getElementById("tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-tab]");
+  if(!b) return;
+  tab = b.dataset.tab;
+  try{ localStorage.setItem("board.tab", tab); }catch(err){}
+  paint();
+});
+
+render();
+
+/* Firebase の読み込みが終わったら始める */
+window.boardBoot = boardBoot;
+if(window.BOARD_FB) boardBoot();
+})();
+</script>
+
+<script>
+/* Firebase の接続先。ここは公開されていても問題ない値です。
+   守りは Firestore 側のルール（牧場コードを知っている人だけ）で行っています。 */
+window.BOARD_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCPE8K_sTJlsRHZ_TGrNWAG0-qaoDypwws",
+  authDomain: "bokujo-board.firebaseapp.com",
+  projectId: "bokujo-board",
+  storageBucket: "bokujo-board.firebasestorage.app",
+  messagingSenderId: "836172665940",
+  appId: "1:836172665940:web:6639cda9c35e691f4109c1"
+};
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  doc, collection, onSnapshot, setDoc, updateDoc, deleteDoc, deleteField, FieldPath
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+window.BOARD_FB = {
+  initializeApp: initializeApp,
+  getAuth: getAuth, signInAnonymously: signInAnonymously, onAuthStateChanged: onAuthStateChanged,
+  initializeFirestore: initializeFirestore,
+  persistentLocalCache: persistentLocalCache,
+  persistentMultipleTabManager: persistentMultipleTabManager,
+  doc: doc, collection: collection, onSnapshot: onSnapshot,
+  setDoc: setDoc, updateDoc: updateDoc, deleteDoc: deleteDoc,
+  deleteField: deleteField, FieldPath: FieldPath
+};
+if(window.boardBoot) window.boardBoot();
+</script>
+
+<script>
+/* 画面そのものをこの端末に残して、電波がなくても開けるようにする */
+(function(){
+  if(!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* 失敗しても動く */ });
+  });
+})();
+
+/* アプリ情報ファイル（manifest）は iPhone/iPad では読み込ませない。
+   iOS は manifest があるとそちらの開始ページを優先してしまい、
+   リンクに付けた牧場コードが落ちてしまうため。 */
+(function(){
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if(isIOS) return;
+  var ml = document.createElement("link");
+  ml.rel = "manifest";
+  ml.href = "manifest.webmanifest";
+  document.head.appendChild(ml);
+})();
+</script>
+</body>
+</html>
