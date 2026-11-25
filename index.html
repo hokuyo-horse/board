@@ -537,7 +537,7 @@ en: {
 "●＝分娩予定":"● = due to foal",
 
 /* --- 設定 --- */
-"予定の設定":"Schedule settings",
+"予定の設定":"Schedule settings","アプリの版":"App version",
 "分娩後の初回直検":"First exam after foaling",
 "分娩日から何日目に直検するか。既定は8日です":"How many days after foaling to examine. Default is 8.",
 "妊娠期間":"Length of pregnancy",
@@ -721,7 +721,7 @@ hi: {
 "✓＝記録済み":"✓ = सब दर्ज","色つき＝未記録あり":"रंग = कुछ दर्ज नहीं",
 "●＝分娩予定":"● = ब्याने की तारीख",
 
-"予定の設定":"योजना सेटिंग",
+"予定の設定":"योजना सेटिंग","アプリの版":"ऐप संस्करण",
 "分娩後の初回直検":"ब्याने के बाद पहली जाँच",
 "分娩日から何日目に直検するか。既定は8日です":"ब्याने के कितने दिन बाद जाँच। सामान्यतः 8।",
 "妊娠期間":"गर्भ की अवधि",
@@ -920,6 +920,9 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ if(t.parentNode) t.remove(); }, 2600);
 }
+
+/* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
+var APP_VERSION = "2026-11-25b";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -3541,6 +3544,11 @@ function openSettings(){
     sheetBody.appendChild(season);
   }
 
+  var ver = el("p","field-hint", tr("アプリの版") + "：" + APP_VERSION);
+  ver.style.textAlign = "center";
+  ver.style.marginTop = "16px";
+  sheetBody.appendChild(ver);
+
   var buttons = [];
   var close = el("button","btn",tr("閉じる"));
   close.addEventListener("click", closeSheet);
@@ -3628,8 +3636,28 @@ if(window.boardBoot) window.boardBoot();
 /* 画面そのものをこの端末に残して、電波がなくても開けるようにする */
 (function(){
   if(!("serviceWorker" in navigator)) return;
+
+  /* すでに控えから動いていた場合だけ、新しい版に入れ替わったら開き直す。
+     入力の途中（画面が開いているとき）には開き直さない。 */
+  var had = !!navigator.serviceWorker.controller;
+  var done = false;
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    if(!had || done) return;
+    var sheet = document.getElementById("sheet");
+    if(sheet && sheet.classList.contains("open")) return;
+    done = true;
+    location.reload();
+  });
+
   window.addEventListener("load", function(){
-    navigator.serviceWorker.register("sw.js").catch(function(){ /* 失敗しても動く */ });
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      function look(){ try{ reg.update(); }catch(e){ } }
+      setTimeout(look, 3000);
+      /* アプリに戻ってくるたびに、新しい版が出ていないか見にいく */
+      document.addEventListener("visibilitychange", function(){
+        if(document.visibilityState === "visible") look();
+      });
+    }).catch(function(){ /* 失敗しても動く */ });
   });
 })();
 
