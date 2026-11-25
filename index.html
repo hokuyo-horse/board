@@ -277,6 +277,34 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
 .sched-row>div:first-child{min-width:0}
 .sched-row>h3{margin:0}
 
+/* 馬名でさがす */
+.search{position:relative;margin-bottom:10px}
+.search-row{display:flex;gap:6px;align-items:center}
+.search-input{
+  flex:1;min-width:0;appearance:none;
+  border:1px solid var(--line-strong);border-radius:10px;background:var(--card);
+  padding:10px 12px;font-size:16px;color:var(--ink);
+}
+.search-clear{
+  appearance:none;cursor:pointer;border:1px solid var(--line-strong);background:var(--card);
+  color:var(--muted);border-radius:10px;min-width:46px;min-height:46px;font-size:17px;line-height:1;padding:0;
+}
+.search-clear:focus-visible,.search-input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.suggest{
+  position:absolute;left:0;right:52px;top:100%;z-index:5;margin-top:4px;
+  background:var(--card);border:1px solid var(--line-strong);border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.14);max-height:320px;overflow-y:auto;
+}
+.suggest[hidden]{display:none}
+.suggest-item{
+  display:flex;width:100%;align-items:baseline;gap:8px;
+  appearance:none;cursor:pointer;background:none;border:none;
+  border-top:1px solid var(--line);padding:12px;text-align:left;
+  font-size:16px;font-weight:700;color:var(--ink);
+}
+.suggest-item:first-child{border-top:none}
+.suggest-item .sub{font-size:12px;font-weight:400;color:var(--muted)}
+
 .tally{display:flex;gap:8px;margin-bottom:10px}
 .tally>div{
   flex:1;background:var(--card);border:1px solid var(--line);
@@ -459,7 +487,7 @@ en: {
 "今日":"Today","治療":"Treatment","予定表":"Calendar",
 "今日の直検":"Exams today","今日の治療":"Care today",
 "名前":"Name","設定":"Settings","言語":"Language",
-"今週":"This week","全頭":"All mares",
+"今週":"This week","全頭":"All mares","馬名でさがす":"Search by name","さがした結果":"Search results","その名前の馬は見つかりません。":"No mare with that name.","消す":"Clear",
 "期限すぎ":"Overdue",
 "今日の直検":"Rectal exams today","今週の直検":"Rectal exams this week",
 "今日の妊娠鑑定":"Pregnancy checks today","今週の妊娠鑑定":"Pregnancy checks this week",
@@ -650,7 +678,7 @@ hi: {
 "今日":"आज","治療":"इलाज","予定表":"कैलेंडर",
 "今日の直検":"आज की जाँच","今日の治療":"आज की देखभाल",
 "名前":"नाम","設定":"सेटिंग","言語":"भाषा",
-"今週":"इस सप्ताह","全頭":"सभी घोड़ी",
+"今週":"इस सप्ताह","全頭":"सभी घोड़ी","馬名でさがす":"नाम से खोजें","さがした結果":"खोज के नतीजे","その名前の馬は見つかりません。":"उस नाम की घोड़ी नहीं मिली।","消す":"मिटाएँ",
 "期限すぎ":"समय निकल गया",
 "今日の直検":"आज की रेक्टल जाँच","今週の直検":"इस सप्ताह की रेक्टल जाँच",
 "今日の妊娠鑑定":"आज की गर्भ जाँच","今週の妊娠鑑定":"इस सप्ताह की गर्भ जाँच",
@@ -932,7 +960,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25c";
+var APP_VERSION = "2026-11-25d";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -943,6 +971,8 @@ var loaded = { t:false, e:false, l:false };
 var tab = "today";
 var treatFilter = "治療中";
 var examFilter  = "今日";
+var mareQuery   = "";   // 馬名でさがすときの入力
+var refocusSearch = false;
 var calMonth = null;
 var calSel = null;
 var renderSeq = 0;
@@ -1756,6 +1786,14 @@ function horseNames(){
 }
 function sortByHorse(a,b){ return String(a.horse||"").localeCompare(String(b.horse||""),"ja"); }
 
+/* さがすとき用に名前をならす。ひらがな・半角カナ・大文字小文字・中黒の違いは無視する */
+function normName(s){
+  s = String(s == null ? "" : s);
+  try{ s = s.normalize("NFKC"); }catch(e){ }
+  s = s.replace(/[\u3041-\u3096]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) + 0x60); });
+  return s.toLowerCase().replace(/[\s\u3000・]/g, "");
+}
+
 /* ============ 描画 ============ */
 function nameOf(id){ return id || ""; }
 function byLine(id, when){
@@ -1772,6 +1810,8 @@ function paint(){
   if(locked) return;
   syncDatalist();
   var view = document.getElementById("view");
+  var ae = document.activeElement;
+  refocusSearch = !!(ae && ae.classList && ae.classList.contains("search-input"));
   view.innerHTML = "";
 
   document.getElementById("n-today").textContent = String(dueItems(todayStr()).length);
@@ -1952,33 +1992,128 @@ function paintExam(view){
   ["今日","今週","直検継続","妊娠鑑定待ち","受胎","全頭"].forEach(function(p){
     var b = el("button", null, tr(p));
     b.setAttribute("aria-pressed", examFilter === p ? "true" : "false");
-    b.addEventListener("click", function(){ examFilter = p; paint(); });
+    b.addEventListener("click", function(){ examFilter = p; mareQuery = ""; paint(); });
     f.appendChild(b);
   });
   view.appendChild(f);
 
-  if(examFilter === "今日"){
-    paintDueGroups(view, todayStr(), "今日", tr("今日やる直検はありません。"));
-    return;
-  }
-  if(examFilter === "今週"){
-    paintDueGroups(view, addDays(todayStr(), 7), "今週", tr("今週の予定はありません。"));
-    return;
+  /* ----- 馬名でさがす ----- */
+  var search = el("div","search");
+  var srow = el("div","search-row");
+  var si = inp("text", mareQuery, tr("馬名でさがす"));
+  si.className = "search-input";
+  si.autocomplete = "off";
+  si.setAttribute("aria-label", tr("馬名でさがす"));
+  srow.appendChild(si);
+  var sclr = el("button","search-clear","✕");
+  sclr.type = "button";
+  sclr.setAttribute("aria-label", tr("消す"));
+  srow.appendChild(sclr);
+  search.appendChild(srow);
+  var sug = el("div","suggest");
+  sug.hidden = true;
+  search.appendChild(sug);
+  view.appendChild(search);
+
+  var listBox = el("div");
+  view.appendChild(listBox);
+
+  /* 入力に当てはまる馬。入力がなければ null（＝さがしていない） */
+  function hits(){
+    var q = normName(mareQuery);
+    if(!q) return null;
+    return mares.filter(function(m){ return normName(m.horse).indexOf(q) >= 0; });
   }
 
-  var list = examList().slice();
-  list.sort(byStage);
-
-  if(!list.length){
-    view.appendChild(el("div","empty",
-      examFilter === "全頭"
-        ? tr("まだ登録がありません。分娩日か種付日を入れると、予定日が自動で出ます。")
-        : tr("この分類に入る馬はいません。")));
-    return;
+  function fillSuggest(){
+    sug.textContent = "";
+    var q = normName(mareQuery);
+    var found = hits();
+    if(!q || !found || !found.length){ sug.hidden = true; return; }
+    found.slice().sort(function(a, b){
+      var ai = normName(a.horse).indexOf(q), bi = normName(b.horse).indexOf(q);
+      if(ai !== bi) return ai - bi;        /* 頭から一致するものを先に */
+      return sortByHorse(a, b);
+    }).slice(0, 8).forEach(function(m){
+      var b = el("button","suggest-item");
+      b.type = "button";
+      b.appendChild(el("span", null, m.horse || tr("（馬名なし）")));
+      var tail = [];
+      if(cat2Of(m) === "預託馬") tail.push(tr("預託"));
+      if(m.place) tail.push(m.place);
+      if(tail.length) b.appendChild(el("span","sub", tail.join("・")));
+      /* 押したときに入力欄から外れてしまわないように */
+      b.addEventListener("mousedown", function(ev){ ev.preventDefault(); });
+      b.addEventListener("click", function(){ sug.hidden = true; openMareDetail(m.id); });
+      sug.appendChild(b);
+    });
+    sug.hidden = false;
   }
-  var s = el("div","stack");
-  list.forEach(function(m){ s.appendChild(mareCard(m)); });
-  view.appendChild(s);
+
+  function fillList(){
+    listBox.textContent = "";
+    var found = hits();
+    if(found){
+      if(!found.length){
+        listBox.appendChild(el("div","empty", tr("その名前の馬は見つかりません。")));
+        return;
+      }
+      var fl = found.slice().sort(byStage);
+      listBox.appendChild(sectionHead(tr("さがした結果"), fl.length, "頭"));
+      var fs = el("div","stack");
+      fl.forEach(function(m){ fs.appendChild(mareCard(m)); });
+      listBox.appendChild(fs);
+      return;
+    }
+    if(examFilter === "今日"){
+      paintDueGroups(listBox, todayStr(), "今日", tr("今日やる直検はありません。"));
+      return;
+    }
+    if(examFilter === "今週"){
+      paintDueGroups(listBox, addDays(todayStr(), 7), "今週", tr("今週の予定はありません。"));
+      return;
+    }
+    var list = examList().slice();
+    list.sort(byStage);
+    if(!list.length){
+      listBox.appendChild(el("div","empty",
+        examFilter === "全頭"
+          ? tr("まだ登録がありません。分娩日か種付日を入れると、予定日が自動で出ます。")
+          : tr("この分類に入る馬はいません。")));
+      return;
+    }
+    var s = el("div","stack");
+    list.forEach(function(m){ s.appendChild(mareCard(m)); });
+    listBox.appendChild(s);
+  }
+
+  si.addEventListener("input", function(){
+    mareQuery = si.value;
+    fillSuggest();
+    fillList();
+  });
+  si.addEventListener("focus", fillSuggest);
+  si.addEventListener("blur", function(){
+    setTimeout(function(){ sug.hidden = true; }, 250);
+  });
+  si.addEventListener("keydown", function(ev){
+    if(ev.key === "Escape"){ sug.hidden = true; si.blur(); }
+  });
+  sclr.addEventListener("click", function(){
+    mareQuery = "";
+    si.value = "";
+    fillSuggest();
+    fillList();
+    si.focus();
+  });
+
+  fillList();
+  if(refocusSearch){
+    refocusSearch = false;
+    si.focus();
+    try{ si.setSelectionRange(si.value.length, si.value.length); }catch(e){ }
+    fillSuggest();
+  }
 }
 
 /* ----- カード ----- */
