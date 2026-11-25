@@ -563,7 +563,7 @@ en: {
 /* --- 年度 --- */
 "年度の管理":"Season","年度の名前":"Name of the season",
 "保存するファイルの名前に使います":"Used in the name of the saved file",
-"馬名と場所を引き継ぐ":"Keep horse names and locations",
+"馬名・厩舎・区分・メモを引き継ぐ":"Keep names, barns, categories and notes",
 "引き継ぐ":"Keep","引き継がない":"Do not keep",
 "「保存する」は今の記録をコピーして別ファイルに残します。アプリのデータはそのままです。":"\"Save\" copies the current records into a separate file. The app keeps its data.",
 "「新しいシーズンを始める」は、保存したうえで分娩日・種付日・直検の記録を消します。治療の記録は消えません。":"\"Start a new season\" saves first, then clears foaling dates, breeding dates and exam records. Treatment records are kept.",
@@ -595,7 +595,11 @@ en: {
 "保存できませんでした":"Could not save",
 "保存できませんでした。電波の入る場所でもう一度お試しください":"Could not save. Try again where there is signal.",
 "（未記入）":"(not written)",
-"区分":"Category","未選択":"Not chosen","上がり":"Retired","不受胎馬":"Barren","子付き":"With foal",
+"区分":"Category","未選択":"Not chosen","上がり":"Retired","空胎":"Barren","子付き":"With foal",
+"自馬・預託馬":"Owned / boarded","自馬":"Owned","預託馬":"Boarded","預託":"Boarded","オーナー":"Owner","預託馬のときに入れてください":"Fill in for boarded mares",
+"厩舎・分場":"Barn / branch","いまいる場所":"Where she is now","一覧にないときは「＋ 新しく追加」を選んで名前を入れてください":"If it is not listed, choose \u300b+ Add new\u300a and type the name",
+"分娩予定日の出し方":"How the due date is worked out","日数で数える":"Count days","暦で数える":"Use the calendar","種付日から決まった日数で出します":"A fixed number of days after the covering date",
+"名前を追加":"Add a name","追加する":"Add","消す":"Remove","もうあります":"Already there","まだ登録がありません。下から追加してください。":"Nothing registered yet. Add one below.","馬の「厩舎・分場」で選べるようになります。":"These become the choices for each mare.","ここで消しても、その名前がついている馬はそのままです。":"Removing one here does not change mares already assigned to it.",
 "変更":"Change","選ぶ":"Choose","これ":"Selected","{horse}の区分":"Category for {horse}",
 "まだ選んでいません。":"Not chosen yet.","馬名の横に表示されます。":"Shown next to the horse's name.",
 "個体メモ":"About this mare","書く":"Write","まだ記入がありません。":"Nothing written yet.",
@@ -741,7 +745,7 @@ hi: {
 
 "年度の管理":"सीज़न","年度の名前":"सीज़न का नाम",
 "保存するファイルの名前に使います":"सेव फ़ाइल के नाम में इस्तेमाल होगा",
-"馬名と場所を引き継ぐ":"घोड़ी के नाम और जगह रखें",
+"馬名・厩舎・区分・メモを引き継ぐ":"नाम, अस्तबल, श्रेणी और नोट रखें",
 "引き継ぐ":"रखें","引き継がない":"न रखें",
 "「保存する」は今の記録をコピーして別ファイルに残します。アプリのデータはそのままです。":"\"सेव करें\" मौजूदा रिकॉर्ड की कॉपी अलग फ़ाइल में रखता है। ऐप का डेटा वैसा ही रहता है।",
 "「新しいシーズンを始める」は、保存したうえで分娩日・種付日・直検の記録を消します。治療の記録は消えません。":"\"नया सीज़न शुरू करें\" पहले सेव करता है, फिर ब्याने-ब्रीडिंग की तारीखें और जाँच रिकॉर्ड मिटाता है। इलाज के रिकॉर्ड रहते हैं।",
@@ -771,7 +775,9 @@ hi: {
 "保存できませんでした":"सेव नहीं हुआ",
 "保存できませんでした。電波の入る場所でもう一度お試しください":"सेव नहीं हुआ। नेटवर्क वाली जगह पर दोबारा कोशिश करें।",
 "（未記入）":"(नहीं लिखा)",
-"区分":"श्रेणी","未選択":"नहीं चुना","上がり":"सेवानिवृत्त","不受胎馬":"खाली","子付き":"बछेड़े के साथ",
+"区分":"श्रेणी","未選択":"नहीं चुना","上がり":"सेवानिवृत्त","空胎":"खाली","子付き":"बछेड़े के साथ",
+"自馬・預託馬":"अपनी / रखी हुई","自馬":"अपनी","預託馬":"रखी हुई","預託":"रखी हुई","オーナー":"मालिक","預託馬のときに入れてください":"रखी हुई घोड़ी हो तो भरें",
+"厩舎・分場":"अस्तबल / शाखा","いまいる場所":"अभी कहाँ है","分娩予定日の出し方":"ब्यांत की तारीख कैसे निकालें","日数で数える":"दिनों से","暦で数える":"कैलेंडर से","名前を追加":"नाम जोड़ें","追加する":"जोड़ें","消す":"हटाएँ","もうあります":"पहले से है",
 "変更":"बदलें","選ぶ":"चुनें","これ":"चुना गया","{horse}の区分":"{horse} की श्रेणी",
 "まだ選んでいません。":"अभी तक नहीं चुना।","馬名の横に表示されます。":"घोड़ी के नाम के बगल में दिखेगा।",
 "個体メモ":"इस घोड़ी के बारे में","書く":"लिखें","まだ記入がありません。":"अभी कुछ नहीं लिखा है।",
@@ -1177,7 +1183,7 @@ function cleanRec(r){
   return out;
 }
 
-var MARE_FIELDS = ["horse","place","foalingDate","breedingDate","stallion",
+var MARE_FIELDS = ["horse","place","foalingDate","breedingDate","stallion","category2","owner",
                    "category","note","createdBy","createdAt","updatedAt"];
 
 /* 画面が渡してくる「馬まるごと」を、保存の形に直す */
@@ -1250,7 +1256,9 @@ function writeDoc(kind, id, body, isNew){
     var s = {
       foalOffset: Number(body.foalOffset) || 8,
       gestation: Number(body.gestation) || 340,
-      steps: body.steps || {}
+      dueMode: (body.dueMode === "calendar") ? "calendar" : "days",
+      steps: body.steps || {},
+      barns: (body.barns || []).map(function(x){ return String(x); })
     };
     return localWrite(function(){ return FB.setDoc(ref, s); });
   }
@@ -1337,7 +1345,9 @@ function toMare(id, r){
     id: id,
     horse: r.horse || "", place: r.place || "",
     foalingDate: r.foalingDate || "", breedingDate: r.breedingDate || "",
-    stallion: r.stallion || "", category: r.category || "", note: r.note || "",
+    stallion: r.stallion || "", category: r.category || "",
+    category2: r.category2 || "", owner: r.owner || "",
+    note: r.note || "",
     manual: (r.manual && r.manual.date) ? r.manual : null,
     done: r.done || {},
     others: others,
@@ -1514,6 +1524,14 @@ function logsFor(id){
              .sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
 }
 /* --- 繁殖の予定日を計算する --- */
+/** 2つの日付の間の日数 */
+function diffDays(a, b){
+  var pa = String(a).split("-"), pb = String(b).split("-");
+  if(pa.length !== 3 || pb.length !== 3) return 0;
+  var da = Date.UTC(Number(pa[0]), Number(pa[1])-1, Number(pa[2]));
+  var db2 = Date.UTC(Number(pb[0]), Number(pb[1])-1, Number(pb[2]));
+  return Math.round((db2 - da) / 86400000);
+}
 function addDays(dateStr, n){
   var p = String(dateStr).split("-");
   if(p.length !== 3) return "";
@@ -1538,11 +1556,50 @@ function gestationDays(){
   var v = settings ? Number(settings.gestation) : 0;
   return (v > 200 && v < 400) ? v : 340;
 }
+
+/* 分娩予定日の出し方。
+   days     … 種付日から決まった日数（既定340日）
+   calendar … 種付日の1ヶ月前の日付の、1年あと
+              （例：2月12日に種付 → 翌年1月12日が分娩予定）
+   暦のほうは、31日など相手の月に無い日は、その月の末日にします。 */
+function dueMode(){
+  return (settings && settings.dueMode === "calendar") ? "calendar" : "days";
+}
+
+function dueByCalendar(ds){
+  if(!ds) return "";
+  var p = String(ds).split("-");
+  if(p.length !== 3) return "";
+  var y = Number(p[0]), mo = Number(p[1]), d = Number(p[2]);
+  if(!y || !mo || !d) return "";
+  mo -= 1;
+  if(mo < 1){ mo = 12; y -= 1; }
+  y += 1;
+  var last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  if(d > last) d = last;
+  return y + "-" + pad(mo) + "-" + pad(d);
+}
+
+/** 種付日から分娩予定日を出す（設定した出し方に従う） */
+function dueFrom(breedingDate){
+  if(!breedingDate) return "";
+  return (dueMode() === "calendar")
+    ? dueByCalendar(breedingDate)
+    : addDays(breedingDate, gestationDays());
+}
+
+/** 種付日から分娩予定日までの日数（画面に出すため） */
+function dueSpan(breedingDate){
+  var d = dueFrom(breedingDate);
+  if(!d) return gestationDays();
+  return diffDays(breedingDate, d);
+}
+
 /** 受胎が確認できている馬の分娩予定日。それ以外は空 */
 function expectedFoaling(m){
   if(!m.breedingDate) return "";
   if(mareStatus(m) !== "受胎") return "";
-  return addDays(m.breedingDate, gestationDays());
+  return dueFrom(m.breedingDate);
 }
 function foalingByDate(){
   var map = {};
@@ -2450,7 +2507,7 @@ function renderPreview(box, foaling, breeding){
     });
   }
   if(breeding){
-    var fd1 = addDays(breeding, gestationDays());
+    var fd1 = dueFrom(breeding);
     if(fd1){
       any = true;
       var rf = el("div","prow");
@@ -2466,17 +2523,25 @@ function openMareForm(m){
   openSheet(m ? "繁殖情報を編集" : tr("繁殖牝馬を登録"));
   var horse = inp("text", m ? m.horse : "", tr("例：ブルーローズ"));
   horse.setAttribute("list","horseNames");
-  var place = inp("text", m ? m.place : "", tr("例：1号厩舎 / 3放牧地"));
+  var barn = barnPicker(m ? (m.place || "") : "");
   var foaling = inp("date", m ? (m.foalingDate || "") : "");
   var breeding = inp("date", m ? (m.breedingDate || "") : "");
   var stallion = inp("text", m ? (m.stallion || "") : "", tr("例：キングカメハメハ"));
   stallion.setAttribute("list","stallionNames");
   var note = ta(m ? (m.note || "") : "", tr("例：気性が激しい。左後肢に古い傷"));
   var cat = sel(CATEGORY_OPTS, (m && m.category) ? m.category : null);
+  var cat2 = sel(CATEGORY2_OPTS, (m && m.category2) ? m.category2 : null);
+  var owner = inp("text", m ? (m.owner || "") : "", tr("例：〇〇ファーム"));
+  var ownerField = field(tr("オーナー"), owner, tr("預託馬のときに入れてください"));
+  function updOwner(){ ownerField.style.display = (cat2.value === "預託馬") ? "" : "none"; }
+  cat2.addEventListener("change", updOwner);
 
   sheetBody.appendChild(field(tr("馬名"), horse));
   sheetBody.appendChild(field(tr("区分"), cat));
-  sheetBody.appendChild(field(tr("場所"), place));
+  sheetBody.appendChild(field(tr("自馬・預託馬"), cat2));
+  sheetBody.appendChild(ownerField);
+  updOwner();
+  sheetBody.appendChild(field(tr("厩舎・分場"), barn.el, tr("一覧にないときは「＋ 新しく追加」を選んで名前を入れてください")));
   sheetBody.appendChild(field(tr("分娩日"), foaling, trf("分娩後{n}日の直検日が出ます", { n: foalOffset() })));
   sheetBody.appendChild(field(tr("種付日"), breeding, tr("空欄でOK。直検で決まってから入れられます")));
   sheetBody.appendChild(field(tr("種牡馬"), stallion));
@@ -2504,13 +2569,17 @@ function openMareForm(m){
   save.addEventListener("click", async function(){
     if(!horse.value.trim()){ toast(tr("馬名を入力してください")); horse.focus(); return; }
     save.disabled = true;
+    var isYotaku = (cat2.value === "預託馬");
+    if(barn.isNew()) addBarn(barn.value());
     var body = {
       horse: horse.value.trim(),
-      place: place.value.trim(),
+      place: barn.value(),
       foalingDate: foaling.value || "",
       breedingDate: breeding.value || "",
       stallion: stallion.value.trim(),
       category: (cat.value === "未選択") ? "" : cat.value,
+      category2: (cat2.value === "未選択") ? "" : cat2.value,
+      owner: isYotaku ? owner.value.trim() : "",
       note: note.value.trim(),
       manual: mDate.value ? {
         date: mDate.value,
@@ -2559,25 +2628,32 @@ function openMareDetail(id){
   if(fdue){
     g.appendChild(el("div","row-label",tr("分娩予定")));
     g.appendChild(el("div","row-value",
-      trf("{d}（種付から{n}日）", { d: fmtDate(fdue), n: gestationDays() })));
+      trf("{d}（種付から{n}日）", { d: fmtDate(fdue), n: dueSpan(m.breedingDate) })));
   }
   info.appendChild(g);
-  if(m.place) info.appendChild(el("div","log-meta", m.place));
   sheetBody.appendChild(info);
 
   var cb = el("div","detail-block");
   var ch = el("div","sched-row");
   ch.appendChild(el("h3", null, tr("区分")));
+  var anyCat = catOf(m) || cat2Of(m) || m.place;
   if(canWrite()){
-    var cEdit = el("button","btn sm", tr(catOf(m) ? "変更" : "選ぶ"));
+    var cEdit = el("button","btn sm", tr(anyCat ? "変更" : "選ぶ"));
     cEdit.addEventListener("click", function(){ openCategoryForm(m); });
     ch.appendChild(cEdit);
   }
   cb.appendChild(ch);
-  if(catOf(m)){
-    var cv = el("div", null, tr(catOf(m)));
-    cv.style.marginTop = "4px";
-    cb.appendChild(cv);
+  if(anyCat){
+    var cg = el("div","rows");
+    function crow(label, value){
+      cg.appendChild(el("div","row-label", tr(label)));
+      cg.appendChild(el("div","row-value", value));
+    }
+    if(catOf(m)) crow("区分", tr(catOf(m)));
+    if(cat2Of(m)) crow("自馬・預託馬", tr(cat2Of(m)));
+    if(ownerOf(m)) crow("オーナー", ownerOf(m));
+    if(m.place) crow("厩舎・分場", m.place);
+    cb.appendChild(cg);
   }else{
     cb.appendChild(el("div","log-meta", tr("まだ選んでいません。")));
   }
@@ -2744,18 +2820,94 @@ var RESULT_SETS = {
   "その他処置": ["実施","中止","その他"]
 };
 /* 繁殖牝馬の区分 */
-var CATEGORY_OPTS = ["未選択","上がり","不受胎馬","子付き"];
+var CATEGORY_OPTS = ["未選択","上がり","空胎","子付き"];
+var CATEGORY2_OPTS = ["未選択","自馬","預託馬"];
 function catOf(m){
   var c = m && m.category;
   return (c && c !== "未選択") ? c : "";
 }
-/* 馬名の行。区分と場所を名前の横に出す */
+function cat2Of(m){
+  var c = m && m.category2;
+  return (c && c !== "未選択") ? c : "";
+}
+/** 預託馬のときだけオーナー名を返す */
+function ownerOf(m){
+  return (cat2Of(m) === "預託馬" && m.owner) ? m.owner : "";
+}
+/* 馬名の行。区分・預託・厩舎を名前の横に出す */
 function horseLine(m){
   var h = el("div","horse", m.horse || tr("（馬名なし）"));
   var c = catOf(m);
   if(c) h.appendChild(el("span","hcat", tr(c)));
+  if(cat2Of(m) === "預託馬") h.appendChild(el("span","hcat", tr("預託")));
   if(m.place) h.appendChild(el("span","place", m.place));
   return h;
+}
+
+/* ----- 厩舎・分場 ----- */
+
+/** 牧場が登録した厩舎・分場の一覧 */
+function barnList(){
+  var a = (settings && settings.barns) || [];
+  if(Object.prototype.toString.call(a) !== "[object Array]") return [];
+  return a.filter(function(x){ return x && String(x).trim(); })
+          .map(function(x){ return String(x).trim(); });
+}
+
+/** 一覧にない名前が馬についていたら、それも選べるようにしておく */
+function barnOptions(current){
+  var list = barnList().slice();
+  if(current && list.indexOf(current) < 0) list.push(current);
+  return list;
+}
+
+/** 厩舎・分場を選ぶ欄。新しい名前をその場で足せる */
+var BARN_NONE = "（未選択）";
+var BARN_ADD = "＋ 新しく追加";
+function barnPicker(current){
+  var s = sel([BARN_NONE].concat(barnOptions(current)).concat([BARN_ADD]),
+              current || BARN_NONE);
+  var nameBox = inp("text", "", tr("例：第二分場"));
+  nameBox.style.marginTop = "8px";
+  nameBox.style.display = "none";
+  var wrap = el("div");
+  wrap.appendChild(s);
+  wrap.appendChild(nameBox);
+  s.addEventListener("change", function(){
+    var add = (s.value === BARN_ADD);
+    nameBox.style.display = add ? "" : "none";
+    if(add) nameBox.focus();
+  });
+  return {
+    el: wrap,
+    value: function(){
+      if(s.value === BARN_ADD) return nameBox.value.trim();
+      return (s.value === BARN_NONE) ? "" : s.value;
+    },
+    isNew: function(){ return s.value === BARN_ADD && !!nameBox.value.trim(); }
+  };
+}
+
+/** 新しい厩舎・分場の名前を設定に足す（すでにあれば何もしない） */
+function addBarn(name){
+  var n = String(name || "").trim();
+  if(!n) return;
+  var list = barnList();
+  if(list.indexOf(n) >= 0) return;
+  saveSettings({ barns: list.concat([n]) });
+}
+
+/** 設定の一部だけを書き換える */
+function saveSettings(patch){
+  var body = {
+    foalOffset: foalOffset(),
+    gestation: gestationDays(),
+    dueMode: dueMode(),
+    steps: (settings && settings.steps) || {},
+    barns: barnList()
+  };
+  Object.keys(patch).forEach(function(k){ body[k] = patch[k]; });
+  return db.doc("settings/schedule").set(body);
 }
 
 /* 卵胞ボタンの並び（未入力・なし・0.5〜6.0cm） */
@@ -2997,16 +3149,47 @@ function openCategoryForm(m){
   block.appendChild(el("div","log-meta", tr("馬名の横に表示されます。")));
   sheetBody.appendChild(block);
 
+  /* 自馬か預託馬か。預託馬ならオーナー名も */
+  var cat2 = sel(CATEGORY2_OPTS, cat2Of(m) || "未選択");
+  var owner = inp("text", m.owner || "", tr("例：〇〇ファーム"));
+  var ownerField = field(tr("オーナー"), owner, tr("預託馬のときに入れてください"));
+  function updOwner(){ ownerField.style.display = (cat2.value === "預託馬") ? "" : "none"; }
+  cat2.addEventListener("change", updOwner);
+  var b2 = el("div","detail-block");
+  b2.appendChild(el("h3", null, tr("自馬・預託馬")));
+  b2.appendChild(field(tr("区分"), cat2));
+  b2.appendChild(ownerField);
+  updOwner();
+  sheetBody.appendChild(b2);
+
+  /* どの厩舎・分場にいるか */
+  var barn = barnPicker(m.place || "");
+  var b3 = el("div","detail-block");
+  b3.appendChild(el("h3", null, tr("厩舎・分場")));
+  b3.appendChild(field(tr("いまいる場所"), barn.el,
+    tr("一覧にないときは「＋ 新しく追加」を選んで名前を入れてください")));
+  sheetBody.appendChild(b3);
+
   var save = el("button","btn e", tr("保存"));
   save.addEventListener("click", async function(){
     save.disabled = true;
+    if(barn.isNew()) addBarn(barn.value());
     var body = Object.assign({}, m);
     delete body.id;
     body.category = (cur === "未選択") ? "" : cur;
+    body.category2 = (cat2.value === "未選択") ? "" : cat2.value;
+    body.owner = (cat2.value === "預託馬") ? owner.value.trim() : "";
+    body.place = barn.value();
     body.updatedAt = new Date().toISOString();
     var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("保存しました"));
     save.disabled = false;
-    if(ok){ m.category = body.category; openMareDetail(m.id); }
+    if(ok){
+      m.category = body.category;
+      m.category2 = body.category2;
+      m.owner = body.owner;
+      m.place = body.place;
+      openMareDetail(m.id);
+    }
   });
   var back = el("button","btn", tr("やめる"));
   back.addEventListener("click", function(){ openMareDetail(m.id); });
@@ -3158,10 +3341,92 @@ function openSettings(){
   fo.disabled = !editable;
   sheetBody.appendChild(field(tr("分娩後の初回直検"), fo, tr("分娩日から何日目に直検するか。既定は8日です")));
 
+  /* 分娩予定日の出し方 */
+  var mode = dueMode();
+  var mBlock = el("div","detail-block");
+  mBlock.appendChild(el("h3", null, tr("分娩予定日の出し方")));
+  var mRows = [];
+  var MODES = [
+    ["days", "日数で数える", "種付日から決まった日数で出します"],
+    ["calendar", "暦で数える", "種付日の1ヶ月前の日付の、1年あとにします。例：2月12日に種付 → 翌年1月12日"]
+  ];
+  function repaintMode(){
+    mRows.forEach(function(r){
+      var on = (r.key === mode);
+      r.el.setAttribute("aria-pressed", on ? "true" : "false");
+      r.state.textContent = on ? tr("これ") : tr("選ぶ");
+    });
+    gdField.style.display = (mode === "days") ? "" : "none";
+  }
+  MODES.forEach(function(x){
+    var row = el("button","toggle-row");
+    row.type = "button";
+    row.appendChild(el("span","toggle-label", tr(x[1])));
+    var state = el("span","toggle-state", "");
+    row.appendChild(state);
+    row.addEventListener("click", function(){
+      if(!editable){ toast(tr("このアカウントでは変更できません")); return; }
+      mode = x[0];
+      repaintMode();
+    });
+    mRows.push({ key: x[0], el: row, state: state });
+    mBlock.appendChild(row);
+    mBlock.appendChild(el("div","log-meta", tr(x[2])));
+  });
+
   var gd = inp("number", String(gestationDays()));
   gd.min = "200"; gd.max = "399";
   gd.disabled = !editable;
-  sheetBody.appendChild(field(tr("妊娠期間"), gd, tr("種付日から何日目を分娩予定日にするか。既定は340日です")));
+  var gdField = field(tr("妊娠期間"), gd, tr("種付日から何日目を分娩予定日にするか。既定は340日です"));
+  mBlock.appendChild(gdField);
+  repaintMode();
+  sheetBody.appendChild(mBlock);
+
+  /* 厩舎・分場 */
+  var barns = barnList().slice();
+  var bBlock = el("div","detail-block");
+  bBlock.appendChild(el("h3", null, tr("厩舎・分場")));
+  var bList = el("div");
+  bBlock.appendChild(bList);
+  function paintBarns(){
+    bList.textContent = "";
+    if(!barns.length){
+      bList.appendChild(el("div","log-meta", tr("まだ登録がありません。下から追加してください。")));
+    }
+    barns.forEach(function(name, i){
+      var row = el("div","sched-row");
+      row.appendChild(el("div", null, name));
+      if(editable){
+        var del = el("button","btn sm", tr("消す"));
+        del.addEventListener("click", function(){
+          barns.splice(i, 1);
+          paintBarns();
+        });
+        row.appendChild(del);
+      }
+      bList.appendChild(row);
+    });
+  }
+  paintBarns();
+  if(editable){
+    var newBarn = inp("text", "", tr("例：第二分場"));
+    bBlock.appendChild(field(tr("名前を追加"), newBarn));
+    var addBtn = el("button","btn wide", tr("追加する"));
+    addBtn.style.marginTop = "8px";
+    addBtn.addEventListener("click", function(){
+      var n = newBarn.value.trim();
+      if(!n){ newBarn.focus(); return; }
+      if(barns.indexOf(n) >= 0){ toast(tr("もうあります")); return; }
+      barns.push(n);
+      newBarn.value = "";
+      paintBarns();
+    });
+    bBlock.appendChild(addBtn);
+  }
+  bBlock.appendChild(el("div","log-meta",
+    tr("馬の「厩舎・分場」で選べるようになります。")
+    + tr("ここで消しても、その名前がついている馬はそのままです。")));
+  sheetBody.appendChild(bBlock);
 
   var block = el("div","detail-block");
   block.appendChild(el("h3", null, tr("妊娠鑑定でつくる予定")));
@@ -3227,7 +3492,7 @@ function openSettings(){
     var keepRow = el("button","toggle-row");
     keepRow.type = "button";
     keepRow.setAttribute("aria-pressed","true");
-    keepRow.appendChild(el("span","toggle-label",tr("馬名と場所を引き継ぐ")));
+    keepRow.appendChild(el("span","toggle-label",tr("馬名・厩舎・区分・メモを引き継ぐ")));
     var keepState = el("span","toggle-state", tr("引き継ぐ"));
     keepRow.appendChild(keepState);
     keepRow.addEventListener("click", function(){
@@ -3290,6 +3555,8 @@ function openSettings(){
       var body = {
         foalOffset: (n > 0 && n < 100) ? n : 8,
         gestation: (g2 > 200 && g2 < 400) ? g2 : 340,
+        dueMode: (mode === "calendar") ? "calendar" : "days",
+        barns: barns.slice(),
         steps: {}
       };
       ALL_STEPS.forEach(function(s){ body.steps[String(s[0])] = !!picks[s[0]](); });
