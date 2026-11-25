@@ -263,6 +263,16 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
 }
 .ovary-note{font-size:12px;color:var(--muted);margin-top:8px;text-align:center}
 
+/* 子宮の浮腫 */
+.edema{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
+.ed-btn{
+  appearance:none;cursor:pointer;padding:0;
+  border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);
+  border-radius:9px;min-height:54px;font-size:15px;line-height:1.1;font-weight:700;
+}
+.ed-btn[aria-pressed="true"]{background:var(--exam);border-color:var(--exam);color:#fff}
+.ed-btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
 .sched-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .sched-row>div:first-child{min-width:0}
 .sched-row>h3{margin:0}
@@ -609,7 +619,7 @@ en: {
 "この馬を削除":"Delete this mare","削除しています…":"Deleting…","この馬の直検・妊娠鑑定の記録もすべて消えます。元に戻せません。間違えて登録したときだけお使いください。":"All rectal exam and pregnancy check records for this mare are deleted too. This cannot be undone. Use it only for a mare entered by mistake.",
 "この回は飛ばす":"Skip this one","未実施":"Not done","飛ばしました":"Skipped",
 "都合で実施しなかったときに押します。予定一覧から外れ、記録には「未実施」として残ります。あとで取り消せます。":"Press this if it was not carried out. It leaves the schedule and stays in the history as Not done. You can undo it later.",
-"左卵胞":"Left","右卵胞":"Right","黄体":"CL",
+"左卵胞":"Left","右卵胞":"Right","黄体":"CL","子宮の浮腫":"Uterine edema","浮腫":"Edema",
 "左卵胞・右卵胞を押すと大きさを選べます（単位はcm）":"Tap Left or Right to choose the size (cm)",
 "左{v}cm":"L {v}cm","右{v}cm":"R {v}cm",
 "左":"Left","右":"Right","両側":"Both",
@@ -787,7 +797,7 @@ hi: {
 "この馬を削除":"यह घोड़ी हटाएँ","削除しています…":"हटाया जा रहा है…","この馬の直検・妊娠鑑定の記録もすべて消えます。元に戻せません。間違えて登録したときだけお使いください。":"इस घोड़ी की सभी जाँच और गर्भ जाँच के रिकॉर्ड भी हट जाएँगे। वापस नहीं लाया जा सकता। सिर्फ गलती से दर्ज की गई घोड़ी के लिए इस्तेमाल करें।",
 "この回は飛ばす":"इसे छोड़ें","未実施":"नहीं किया","飛ばしました":"छोड़ दिया",
 "都合で実施しなかったときに押します。予定一覧から外れ、記録には「未実施」として残ります。あとで取り消せます。":"अगर नहीं किया गया तो यह दबाएँ। यह योजना से हट जाएगा और रिकॉर्ड में \"नहीं किया\" रहेगा। बाद में वापस ले सकते हैं।",
-"左卵胞":"बायाँ","右卵胞":"दायाँ","黄体":"CL",
+"左卵胞":"बायाँ","右卵胞":"दायाँ","黄体":"CL","子宮の浮腫":"गर्भाशय शोफ","浮腫":"शोफ",
 "左卵胞・右卵胞を押すと大きさを選べます（単位はcm）":"साइज़ चुनने के लिए बायाँ/दायाँ दबाएँ (cm)",
 "左{v}cm":"बायाँ {v}cm","右{v}cm":"दायाँ {v}cm",
 "左":"बायाँ","右":"दायाँ","両側":"दोनों",
@@ -922,7 +932,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25b";
+var APP_VERSION = "2026-11-25c";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1180,7 +1190,7 @@ function str(v){ return (v === undefined || v === null) ? "" : String(v); }
 function cleanRec(r){
   r = r || {};
   var out = {};
-  ["kind","label","date","result","memo","by","at","lf","rf","cl"].forEach(function(k){
+  ["kind","label","date","result","memo","by","at","lf","rf","cl","ed"].forEach(function(k){
     out[k] = str(r[k]);
   });
   return out;
@@ -2920,6 +2930,38 @@ var SIZE_OPTS = (function(){
   return a;
 })();
 
+/* 子宮の浮腫。−／＋／＋＋／＋＋＋ で選ぶ */
+var EDEMA_OPTS = [
+  { v:"",       label:"未入力" },
+  { v:"−",      label:"−" },
+  { v:"＋",     label:"＋" },
+  { v:"＋＋",   label:"＋＋" },
+  { v:"＋＋＋", label:"＋＋＋" }
+];
+function edemaPicker(init){
+  var wrap = el("div","edema");
+  var cur = "";
+  var btns = [];
+  EDEMA_OPTS.forEach(function(o){
+    var b = el("button","ed-btn", tr(o.label));
+    b.type = "button";
+    b.setAttribute("aria-pressed","false");
+    b.addEventListener("click", function(){
+      cur = o.v;
+      btns.forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    });
+    btns.push(b);
+    wrap.appendChild(b);
+  });
+  var k = 0;
+  for(var i = 0; i < EDEMA_OPTS.length; i++){
+    if(EDEMA_OPTS[i].v === (init || "")){ k = i; break; }
+  }
+  cur = EDEMA_OPTS[k].v;
+  btns[k].setAttribute("aria-pressed","true");
+  return { el: wrap, value: function(){ return cur; } };
+}
+
 /* 片側の卵巣。卵胞の大きさと黄体をひとまとめに選ぶ */
 function ovaryColumn(titleKey, initSize, initCl){
   var col = el("div","ovary");
@@ -2994,11 +3036,12 @@ function ovaryColumn(titleKey, initSize, initCl){
 /* 記録された直検の内容を、画面の言語で1行にする */
 function doneText(d){
   if(!d) return "";
-  if(d.lf || d.rf || d.cl){
+  if(d.lf || d.rf || d.cl || d.ed){
     var p = [];
     if(d.lf) p.push(trf("左{v}cm", { v: d.lf }));
     if(d.rf) p.push(trf("右{v}cm", { v: d.rf }));
     if(d.cl) p.push(tr("黄体") + " " + tr(d.cl));
+    if(d.ed) p.push(tr("浮腫") + " " + d.ed);
     return p.join("　");
   }
   return tr(d.result || "記録済");
@@ -3008,7 +3051,7 @@ function openItemResult(m, it){
   openSheet(m.horse + "　" + trl(it.label));
   var when = inp("date", (prev && prev.date) || it.date || todayStr());
   var isExam = (it.kind === "直検");
-  var result = null, lf = null, rf = null;
+  var result = null, lf = null, rf = null, ed = null;
   sheetBody.appendChild(field(tr("実施日"), when));
 
   if(isExam){
@@ -3020,6 +3063,13 @@ function openItemResult(m, it){
     ov.appendChild(rf.el);
     sheetBody.appendChild(ov);
     sheetBody.appendChild(el("div","ovary-note", tr("左卵胞・右卵胞を押すと大きさを選べます（単位はcm）")));
+
+    var edBlock = el("div","detail-block");
+    edBlock.style.marginTop = "12px";
+    edBlock.appendChild(el("h3", null, tr("子宮の浮腫")));
+    ed = edemaPicker(prev ? prev.ed : "");
+    edBlock.appendChild(ed.el);
+    sheetBody.appendChild(edBlock);
   }else{
     result = sel(RESULT_SETS[it.kind] || ["実施"], prev ? prev.result : null);
     sheetBody.appendChild(field(tr("結果"), result));
@@ -3068,11 +3118,13 @@ function openItemResult(m, it){
       var vl = lf.state.size;
       var vr = rf.state.size;
       var vc = (lf.state.cl && rf.state.cl) ? "両側" : lf.state.cl ? "左" : rf.state.cl ? "右" : "";
-      rec.lf = vl; rec.rf = vr; rec.cl = vc;
+      var ve = ed ? ed.value() : "";
+      rec.lf = vl; rec.rf = vr; rec.cl = vc; rec.ed = ve;
       var parts = [];
       if(vl) parts.push("左" + vl + "cm");
       if(vr) parts.push("右" + vr + "cm");
       if(vc) parts.push("黄体" + vc);
+      if(ve) parts.push("浮腫" + ve);
       rec.result = parts.join(" ");
     }else{
       rec.result = result.value;

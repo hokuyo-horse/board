@@ -6,7 +6,7 @@
    ・それ以外（アイコン、Firebase の部品）は「まずこの端末の控え」。
    ・Firestore との通信（googleapis.com）には一切手を出しません。 */
 
-var CACHE = "board-v2-2";
+var CACHE = "board-v2-3";
 
 var ASSETS = [
   "./",
