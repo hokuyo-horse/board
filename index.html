@@ -472,6 +472,14 @@ en: {
 /* --- 分類・語彙（記録として保存される言葉。表示だけ訳す） --- */
 "直検":"Rectal exam","妊娠鑑定":"Pregnancy check","その他処置":"Other care",
 "治療中":"Under treatment","経過観察":"Monitoring","終了":"Finished",
+"次の往診日":"Next visit","次の往診 {d}":"Next visit {d}","往診日すぎ":"Visit overdue",
+"この先に行く":"Coming up","今日行く馬はいません。":"No visits due today.",
+"経過観察の{n}頭は「治療」タブにあります。":"{n} under monitoring are in the Treatment tab.",
+"この日にする":"Set this date","次の往診を{d}にしました":"Next visit set to {d}",
+"次の往診日を消しました":"Next visit cleared",
+"次に診に行く日。空欄でもかまいません":"The day you will next see this horse. May be left blank",
+"牧場で様子を見てもらう間、次に診に行く日です。":"While the farm keeps an eye on the horse, this is when you will next see it.",
+"空欄のままだと「今日の治療」に毎日出ます。日を入れると、その日まで出てきません。":"Left blank, the horse shows up in Today's treatments every day. With a date, it stays out until then.",
 "受胎":"Pregnant","直検継続":"Still checking","妊娠鑑定待ち":"Waiting for check","未設定":"Not set",
 "妊娠確認":"Pregnant","不受胎":"Not pregnant","双子":"Twins",
 "吸収・流産":"Lost / aborted","要再検":"Recheck needed","その他":"Other",
@@ -664,6 +672,14 @@ en: {
 hi: {
 "直検":"रेक्टल जाँच","妊娠鑑定":"गर्भ जाँच","その他処置":"अन्य देखभाल",
 "治療中":"इलाज चल रहा है","経過観察":"निगरानी","終了":"समाप्त",
+"次の往診日":"अगली विज़िट","次の往診 {d}":"अगली विज़िट {d}","往診日すぎ":"विज़िट का दिन बीत गया",
+"この先に行く":"आगे की विज़िट","今日行く馬はいません。":"आज कोई विज़िट नहीं है।",
+"経過観察の{n}頭は「治療」タブにあります。":"निगरानी वाले {n} घोड़े इलाज टैब में हैं।",
+"この日にする":"यह दिन तय करें","次の往診を{d}にしました":"अगली विज़िट {d} कर दी",
+"次の往診日を消しました":"अगली विज़िट हटा दी",
+"次に診に行く日。空欄でもかまいません":"अगली बार देखने का दिन। खाली भी छोड़ सकते हैं",
+"牧場で様子を見てもらう間、次に診に行く日です。":"फ़ार्म निगरानी रखे, उस बीच अगली बार देखने का दिन।",
+"空欄のままだと「今日の治療」に毎日出ます。日を入れると、その日まで出てきません。":"खाली छोड़ने पर घोड़ा हर दिन आज के इलाज में दिखेगा। दिन डालने पर उस दिन तक नहीं दिखेगा।",
 "受胎":"गर्भवती","直検継続":"जाँच जारी","妊娠鑑定待ち":"जाँच का इंतज़ार","未設定":"तय नहीं",
 "妊娠確認":"गर्भ पुष्ट","不受胎":"गर्भ नहीं","双子":"जुड़वाँ",
 "吸収・流産":"गर्भपात","要再検":"दोबारा जाँच","その他":"अन्य",
@@ -960,7 +976,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25d";
+var APP_VERSION = "2026-11-25e";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1308,7 +1324,7 @@ function writeDoc(kind, id, body, isNew){
   if(kind === "treatments"){
     return localWrite(function(){
       return FB.setDoc(ref, flat(body, ["horse","place","problem","plan","startDate",
-                                        "status","createdBy","createdAt","updatedAt"]),
+                                        "nextVisit","status","createdBy","createdAt","updatedAt"]),
                        { merge: true });
     });
   }
@@ -1553,6 +1569,18 @@ async function guardedWrite(fn, okMsg){
 /* ============ 集計 ============ */
 function activeTreatments(){
   return treatments.filter(function(t){ return t.status === "治療中" || t.status === "経過観察"; });
+}
+function ongoingTreatments(){
+  return treatments.filter(function(t){ return t.status === "治療中"; });
+}
+function watchTreatments(){
+  return treatments.filter(function(t){ return t.status === "経過観察"; });
+}
+/* 今日行く馬。次の往診日が先に決まっているものは今日には出さない。
+   経過観察は牧場に見てもらっているので、ここには入れない。 */
+function treatDueToday(){
+  var td = todayStr();
+  return ongoingTreatments().filter(function(t){ return !t.nextVisit || t.nextVisit <= td; });
 }
 function lastLogDate(treatmentId){
   var best = "";
@@ -1815,7 +1843,7 @@ function paint(){
   view.innerHTML = "";
 
   document.getElementById("n-today").textContent = String(dueItems(todayStr()).length);
-  document.getElementById("n-todaytreat").textContent = String(activeTreatments().length);
+  document.getElementById("n-todaytreat").textContent = String(treatDueToday().length);
   document.getElementById("n-treat").textContent = String(treatList().length);
   document.getElementById("n-exam").textContent = String(examList().length);
   document.getElementById("n-cal").textContent = String(dueItems(addDays(todayStr(), 7)).length);
@@ -1875,7 +1903,7 @@ function examList(){
 
 function unrecordedToday(){
   var td = todayStr();
-  return activeTreatments().filter(function(t){ return lastLogDate(t.id) !== td; });
+  return treatDueToday().filter(function(t){ return lastLogDate(t.id) !== td; });
 }
 
 function sectionHead(title, count, unit, danger){
@@ -1915,14 +1943,25 @@ function paintToday(view){
 }
 
 /* ----- 今日の治療 ----- */
-function paintTodayTreat(view){
-  var act = activeTreatments().sort(sortByHorse);
-  var td = todayStr();
-  var yet = act.filter(function(t){ return lastLogDate(t.id) !== td; });
-  var done = act.filter(function(t){ return lastLogDate(t.id) === td; });
+function watchNote(view){
+  var w = watchTreatments();
+  if(!w.length) return;
+  var n = el("div","log-meta", trf("経過観察の{n}頭は「治療」タブにあります。", { n: w.length }));
+  n.style.marginTop = "12px";
+  view.appendChild(n);
+}
 
-  if(!act.length){
+function paintTodayTreat(view){
+  var td = todayStr();
+  var on = ongoingTreatments().sort(sortByHorse);
+  var due = on.filter(function(t){ return !t.nextVisit || t.nextVisit <= td; });
+  var later = on.filter(function(t){ return t.nextVisit && t.nextVisit > td; });
+  var yet = due.filter(function(t){ return lastLogDate(t.id) !== td; });
+  var done = due.filter(function(t){ return lastLogDate(t.id) === td; });
+
+  if(!on.length){
     view.appendChild(el("div","empty",tr("治療中の馬はいません。")));
+    watchNote(view);
     return;
   }
   if(yet.length){
@@ -1937,6 +1976,17 @@ function paintTodayTreat(view){
     done.forEach(function(t){ s2.appendChild(treatCard(t)); });
     view.appendChild(s2);
   }
+  if(!due.length){
+    view.appendChild(el("div","empty",tr("今日行く馬はいません。")));
+  }
+  if(later.length){
+    view.appendChild(sectionHead(tr("この先に行く"), later.length, "頭"));
+    var s3 = el("div","stack");
+    later.sort(function(a, b){ return String(a.nextVisit).localeCompare(String(b.nextVisit)); })
+         .forEach(function(t){ s3.appendChild(treatCard(t)); });
+    view.appendChild(s3);
+  }
+  watchNote(view);
 }
 
 /* ----- 治療タブ ----- */
@@ -2135,8 +2185,16 @@ function treatCard(t){
   if(!done){
     var last = lastLogDate(t.id);
     var td = todayStr();
-    if(last === td) m.appendChild(el("span","chip n",tr("本日記録済")));
-    else m.appendChild(el("span","chip w",tr("本日未記録")));
+    var ahead = !!(t.nextVisit && t.nextVisit > td);
+    /* 経過観察は牧場で見てもらっている。先の往診日が決まっている馬も、今日の記録は求めない */
+    if(t.status !== "経過観察" && !ahead){
+      if(last === td) m.appendChild(el("span","chip n",tr("本日記録済")));
+      else m.appendChild(el("span","chip w",tr("本日未記録")));
+    }
+    if(t.nextVisit){
+      if(t.nextVisit < td) m.appendChild(el("span","chip w", tr("往診日すぎ")));
+      m.appendChild(el("span",null, trf("次の往診 {d}", { d: fmtDate(t.nextVisit) })));
+    }
     if(last) m.appendChild(el("span",null, trf("最終処置 {d}", { d: fmtDate(last) })));
     else if(t.startDate) m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
   }else if(t.startDate){
@@ -2445,6 +2503,7 @@ function openTreatForm(t){
   var problem = inp("text", t ? t.problem : "", tr("例：左前肢 蜂窩織炎"));
   var plan = ta(t ? t.plan : "", tr("例：セファゾリン 朝夕2回、患部冷却15分、運動制限"));
   var start = inp("date", t ? t.startDate : todayStr());
+  var nextv = inp("date", t ? (t.nextVisit || "") : "");
   var status = sel(["治療中","経過観察","終了"], t ? t.status : "治療中");
 
   sheetBody.appendChild(field(tr("馬名"), horse));
@@ -2452,6 +2511,8 @@ function openTreatForm(t){
   sheetBody.appendChild(field(tr("症状・診断"), problem));
   sheetBody.appendChild(field(tr("処置内容"), plan, tr("誰が見ても同じ処置ができるように書いてください")));
   sheetBody.appendChild(field(tr("開始日"), start));
+  sheetBody.appendChild(field(tr("次の往診日"), nextv,
+    tr("次に診に行く日。空欄でもかまいません")));
   sheetBody.appendChild(field(tr("状態"), status));
 
   var save = el("button","btn t",tr("保存"));
@@ -2464,6 +2525,7 @@ function openTreatForm(t){
       problem: problem.value.trim(),
       plan: plan.value.trim(),
       startDate: start.value || todayStr(),
+      nextVisit: nextv.value || "",
       status: status.value,
       updatedAt: new Date().toISOString()
     };
@@ -2502,6 +2564,7 @@ function openTreatDetail(id){
   meta.appendChild(el("span","chip " + (t.status==="治療中"?"t":t.status==="経過観察"?"w":"n"), tr(t.status||"治療中")));
   if(t.place) meta.appendChild(el("span",null, t.place));
   if(t.startDate) meta.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
+  if(t.nextVisit) meta.appendChild(el("span",null, trf("次の往診 {d}", { d: fmtDate(t.nextVisit) })));
   meta.appendChild(el("span",null, trf("登録 {name}", { name: nameOf(t.createdBy) || tr("記録者不明") })));
   info.appendChild(meta);
   sheetBody.appendChild(info);
@@ -2540,6 +2603,31 @@ function openTreatDetail(id){
   }
 
   if(t.status !== "終了" && canWrite()){
+    var nvBlock = el("div","detail-block");
+    nvBlock.appendChild(el("h3", null, tr("次の往診日")));
+    var nvi = inp("date", t.nextVisit || "");
+    nvBlock.appendChild(nvi);
+    nvBlock.appendChild(el("div","log-meta", tr(t.status === "経過観察"
+      ? "牧場で様子を見てもらう間、次に診に行く日です。"
+      : "空欄のままだと「今日の治療」に毎日出ます。日を入れると、その日まで出てきません。")));
+    var nvb = el("button","btn wide", tr("この日にする"));
+    nvb.style.marginTop = "8px";
+    nvb.addEventListener("click", async function(){
+      nvb.disabled = true;
+      var nbody = Object.assign({}, t);
+      delete nbody.id;
+      nbody.nextVisit = nvi.value || "";
+      nbody.updatedAt = new Date().toISOString();
+      var nok = await guardedWrite(function(){
+        return db.doc("treatments/" + t.id).set(nbody);
+      }, nvi.value ? trf("次の往診を{d}にしました", { d: fmtDate(nvi.value) })
+                   : tr("次の往診日を消しました"));
+      nvb.disabled = false;
+      if(nok){ t.nextVisit = nbody.nextVisit; openTreatDetail(t.id); }
+    });
+    nvBlock.appendChild(nvb);
+    sheetBody.appendChild(nvBlock);
+
     var addLog = el("button","btn t wide",tr("処置を記録"));
     addLog.addEventListener("click", function(){ openLogForm(t); });
     sheetBody.appendChild(addLog);
@@ -2605,8 +2693,11 @@ function openLogForm(t){
   openSheet(trf("{horse}の処置を記録", { horse: t.horse }));
   var date = inp("date", todayStr());
   var text = ta("", tr("例：抗生剤投与、患部の腫れ軽減、歩様やや改善"));
+  var nextv = inp("date", t.nextVisit || "");
   sheetBody.appendChild(field(tr("実施日"), date));
   sheetBody.appendChild(field(tr("実施した内容・馬の様子"), text));
+  sheetBody.appendChild(field(tr("次の往診日"), nextv,
+    tr("次に診に行く日。空欄でもかまいません")));
 
   var save = el("button","btn t",tr("記録する"));
   save.addEventListener("click", async function(){
@@ -2621,6 +2712,16 @@ function openLogForm(t){
         at: new Date().toISOString()
       });
     }, tr("記録しました"));
+    if(ok && (nextv.value || "") !== (t.nextVisit || "")){
+      var nbody = Object.assign({}, t);
+      delete nbody.id;
+      nbody.nextVisit = nextv.value || "";
+      nbody.updatedAt = new Date().toISOString();
+      var nok = await guardedWrite(function(){
+        return db.doc("treatments/" + t.id).set(nbody);
+      }, null);
+      if(nok) t.nextVisit = nbody.nextVisit;
+    }
     save.disabled = false;
     if(ok) openTreatDetail(t.id);
   });
