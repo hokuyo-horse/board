@@ -473,7 +473,7 @@ en: {
 "直検":"Rectal exam","妊娠鑑定":"Pregnancy check","その他処置":"Other care",
 "治療中":"Under treatment","経過観察":"Monitoring","終了":"Finished",
 "次の往診日":"Next visit","次の往診 {d}":"Next visit {d}","往診日すぎ":"Visit overdue",
-"この先に行く":"Coming up","今日行く馬はいません。":"No visits due today.",
+"{d}に治療予定":"Treatment planned {d}","今日治療する馬はいません。":"No treatments due today.",
 "経過観察の{n}頭は「治療」タブにあります。":"{n} under monitoring are in the Treatment tab.",
 "この日にする":"Set this date","次の往診を{d}にしました":"Next visit set to {d}",
 "次の往診日を消しました":"Next visit cleared",
@@ -673,7 +673,7 @@ hi: {
 "直検":"रेक्टल जाँच","妊娠鑑定":"गर्भ जाँच","その他処置":"अन्य देखभाल",
 "治療中":"इलाज चल रहा है","経過観察":"निगरानी","終了":"समाप्त",
 "次の往診日":"अगली विज़िट","次の往診 {d}":"अगली विज़िट {d}","往診日すぎ":"विज़िट का दिन बीत गया",
-"この先に行く":"आगे की विज़िट","今日行く馬はいません。":"आज कोई विज़िट नहीं है।",
+"{d}に治療予定":"{d} को इलाज","今日治療する馬はいません。":"आज कोई इलाज नहीं है।",
 "経過観察の{n}頭は「治療」タブにあります。":"निगरानी वाले {n} घोड़े इलाज टैब में हैं।",
 "この日にする":"यह दिन तय करें","次の往診を{d}にしました":"अगली विज़िट {d} कर दी",
 "次の往診日を消しました":"अगली विज़िट हटा दी",
@@ -976,7 +976,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25e";
+var APP_VERSION = "2026-11-25f";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1977,14 +1977,19 @@ function paintTodayTreat(view){
     view.appendChild(s2);
   }
   if(!due.length){
-    view.appendChild(el("div","empty",tr("今日行く馬はいません。")));
+    view.appendChild(el("div","empty",tr("今日治療する馬はいません。")));
   }
   if(later.length){
-    view.appendChild(sectionHead(tr("この先に行く"), later.length, "頭"));
-    var s3 = el("div","stack");
-    later.sort(function(a, b){ return String(a.nextVisit).localeCompare(String(b.nextVisit)); })
-         .forEach(function(t){ s3.appendChild(treatCard(t)); });
-    view.appendChild(s3);
+    /* 往診日ごとにまとめて、日付を見出しにする */
+    var byDay = {};
+    later.forEach(function(t){ (byDay[t.nextVisit] = byDay[t.nextVisit] || []).push(t); });
+    Object.keys(byDay).sort().forEach(function(ds){
+      var g = byDay[ds].sort(sortByHorse);
+      view.appendChild(sectionHead(trf("{d}に治療予定", { d: fmtDate(ds) }), g.length, "頭"));
+      var sx = el("div","stack");
+      g.forEach(function(t){ sx.appendChild(treatCard(t, true)); });
+      view.appendChild(sx);
+    });
   }
   watchNote(view);
 }
@@ -2167,7 +2172,7 @@ function paintExam(view){
 }
 
 /* ----- カード ----- */
-function treatCard(t){
+function treatCard(t, hideNext){
   var done = (t.status === "終了");
   var c = el("button","card t" + (done ? " done":""));
   c.type = "button";
@@ -2191,7 +2196,7 @@ function treatCard(t){
       if(last === td) m.appendChild(el("span","chip n",tr("本日記録済")));
       else m.appendChild(el("span","chip w",tr("本日未記録")));
     }
-    if(t.nextVisit){
+    if(t.nextVisit && !hideNext){
       if(t.nextVisit < td) m.appendChild(el("span","chip w", tr("往診日すぎ")));
       m.appendChild(el("span",null, trf("次の往診 {d}", { d: fmtDate(t.nextVisit) })));
     }
