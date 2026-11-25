@@ -199,6 +199,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
   min-height:40px;cursor:pointer;
 }
 .filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:700}
+.filters .fcount{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.72;font-weight:700}
 
 .seg{display:flex;gap:6px}
 .seg button{
@@ -474,6 +475,8 @@ en: {
 "治療中":"Under treatment","経過観察":"Monitoring","終了":"Finished",
 "次の往診日":"Next visit","次の往診 {d}":"Next visit {d}","往診日すぎ":"Visit overdue",
 "{d}に治療予定":"Treatment planned {d}","今日治療する馬はいません。":"No treatments due today.",
+"終了 {d}":"Finished {d}","終了した治療を保存して消す":"Archive and clear finished treatments",
+"状態が「終了」の治療だけを別ファイルに保存して、アプリから消します。いつより前の分を消すかは、開いた画面で選べます。":"Saves only treatments marked Finished to a separate file and clears them from the app. You choose the cut-off date on the page that opens.",
 "経過観察の{n}頭は「治療」タブにあります。":"{n} under monitoring are in the Treatment tab.",
 "この日にする":"Set this date","次の往診を{d}にしました":"Next visit set to {d}",
 "次の往診日を消しました":"Next visit cleared",
@@ -674,6 +677,8 @@ hi: {
 "治療中":"इलाज चल रहा है","経過観察":"निगरानी","終了":"समाप्त",
 "次の往診日":"अगली विज़िट","次の往診 {d}":"अगली विज़िट {d}","往診日すぎ":"विज़िट का दिन बीत गया",
 "{d}に治療予定":"{d} को इलाज","今日治療する馬はいません。":"आज कोई इलाज नहीं है।",
+"終了 {d}":"समाप्त {d}","終了した治療を保存して消す":"समाप्त इलाज सहेजकर हटाएँ",
+"状態が「終了」の治療だけを別ファイルに保存して、アプリから消します。いつより前の分を消すかは、開いた画面で選べます。":"\"समाप्त\" इलाज को अलग फ़ाइल में सहेजकर ऐप से हटाता है। किस तारीख़ से पहले वाले हटाने हैं, वह अगली स्क्रीन पर चुनें।",
 "経過観察の{n}頭は「治療」タブにあります。":"निगरानी वाले {n} घोड़े इलाज टैब में हैं।",
 "この日にする":"यह दिन तय करें","次の往診を{d}にしました":"अगली विज़िट {d} कर दी",
 "次の往診日を消しました":"अगली विज़िट हटा दी",
@@ -976,7 +981,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25f";
+var APP_VERSION = "2026-11-25g";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1324,7 +1329,7 @@ function writeDoc(kind, id, body, isNew){
   if(kind === "treatments"){
     return localWrite(function(){
       return FB.setDoc(ref, flat(body, ["horse","place","problem","plan","startDate",
-                                        "nextVisit","status","createdBy","createdAt","updatedAt"]),
+                                        "nextVisit","status","endedDate","createdBy","createdAt","updatedAt"]),
                        { merge: true });
     });
   }
@@ -2003,11 +2008,20 @@ function paintTreat(view){
   bar.appendChild(addBtn);
   view.appendChild(bar);
 
+  var tally = {"治療中":0, "経過観察":0, "終了":0};
+  treatments.forEach(function(t){
+    var st = t.status || "治療中";
+    if(tally[st] !== undefined) tally[st]++;
+  });
+
   var f = el("div","filters");
-  [["治療中","治療中"],["経過観察","経過観察"],["終了","終了"],["すべて","すべて"]].forEach(function(p){
-    var b = el("button",null, tr(p[0]));
-    b.setAttribute("aria-pressed", treatFilter === p[1] ? "true":"false");
-    b.addEventListener("click", function(){ treatFilter = p[1]; paint(); });
+  [["治療中", tally["治療中"]], ["経過観察", tally["経過観察"]],
+   ["終了", tally["終了"]], ["すべて", treatments.length]].forEach(function(p){
+    var b = el("button", null);
+    b.appendChild(el("span", null, tr(p[0])));
+    b.appendChild(el("span","fcount", String(p[1])));
+    b.setAttribute("aria-pressed", treatFilter === p[0] ? "true":"false");
+    b.addEventListener("click", function(){ treatFilter = p[0]; paint(); });
     f.appendChild(b);
   });
   view.appendChild(f);
@@ -2202,8 +2216,9 @@ function treatCard(t, hideNext){
     }
     if(last) m.appendChild(el("span",null, trf("最終処置 {d}", { d: fmtDate(last) })));
     else if(t.startDate) m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
-  }else if(t.startDate){
-    m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
+  }else{
+    if(t.endedDate) m.appendChild(el("span",null, trf("終了 {d}", { d: fmtDate(t.endedDate) })));
+    if(t.startDate) m.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
   }
   c.appendChild(m);
 
@@ -2532,6 +2547,9 @@ function openTreatForm(t){
       startDate: start.value || todayStr(),
       nextVisit: nextv.value || "",
       status: status.value,
+      endedDate: (status.value === "終了")
+        ? ((t && t.endedDate) || todayStr())
+        : "",
       updatedAt: new Date().toISOString()
     };
     var ok;
@@ -2570,6 +2588,7 @@ function openTreatDetail(id){
   if(t.place) meta.appendChild(el("span",null, t.place));
   if(t.startDate) meta.appendChild(el("span",null, trf("開始 {d}", { d: fmtDate(t.startDate) })));
   if(t.nextVisit) meta.appendChild(el("span",null, trf("次の往診 {d}", { d: fmtDate(t.nextVisit) })));
+  if(t.endedDate) meta.appendChild(el("span",null, trf("終了 {d}", { d: fmtDate(t.endedDate) })));
   meta.appendChild(el("span",null, trf("登録 {name}", { name: nameOf(t.createdBy) || tr("記録者不明") })));
   info.appendChild(meta);
   sheetBody.appendChild(info);
@@ -2590,6 +2609,7 @@ function openTreatDetail(id){
         var body = Object.assign({}, t);
         delete body.id;
         body.status = s;
+        body.endedDate = (s === "終了") ? (t.endedDate || todayStr()) : "";
         body.updatedAt = new Date().toISOString();
         var ok = await guardedWrite(function(){
           return db.doc("treatments/" + t.id).set(body);
@@ -3833,6 +3853,16 @@ function openSettings(){
       openSeasonPage("newseason");
     });
     season.appendChild(b2);
+
+    var b3 = el("button","btn wide",tr("終了した治療を保存して消す"));
+    b3.style.marginTop = "8px";
+    b3.addEventListener("click", function(){
+      if(fromCache){ toast(tr("電波のある場所でお試しください")); return; }
+      openSeasonPage("cleanup");
+    });
+    season.appendChild(b3);
+    season.appendChild(el("div","log-meta",
+      tr("状態が「終了」の治療だけを別ファイルに保存して、アプリから消します。いつより前の分を消すかは、開いた画面で選べます。")));
 
     sheetBody.appendChild(season);
   }
