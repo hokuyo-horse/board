@@ -992,7 +992,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25h";
+var APP_VERSION = "2026-11-25i";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1699,9 +1699,13 @@ function expectedFoaling(m){
   if(mareStatus(m) !== "受胎") return "";
   return dueFrom(m.breedingDate);
 }
-/** 種付日さえあれば出す分娩予定日。受胎が未確認でも必ず見られるように。 */
+/** 種付日さえあれば出す分娩予定日。受胎が未確認でも必ず見られるように。
+    ただし「不受胎」とわかっている馬には出しません。 */
 function plannedFoaling(m){
-  return m.breedingDate ? dueFrom(m.breedingDate) : "";
+  if(!m.breedingDate) return "";
+  var last = currentPregDone(m);
+  if(last && PREG_NEGATIVE[last.result]) return "";
+  return dueFrom(m.breedingDate);
 }
 function foalingByDate(){
   var map = {};
@@ -1805,6 +1809,8 @@ function dueItems(limitDate){
   return out;
 }
 var PREG_POSITIVE = {"受胎":1,"双子":1,"妊娠確認":1};  // 妊娠確認は以前の記録用
+/* 「不受胎」とはっきりしたときだけ。「未実施」などは含めません */
+var PREG_NEGATIVE = {"不受胎":1};
 function latestPregDone(m){
   var d = m.done || {};
   var arr = Object.keys(d).map(function(k){ return d[k]; })
@@ -2318,8 +2324,10 @@ function mareCard(m){
   }
 
   var pregVal;
+  /* 予定表にない記録（取り込んだ鑑定など）も拾います */
+  var pregDone = lastPreg ? lastPreg.done : currentPregDone(m);
   if(nextPreg) pregVal = fmtDate(nextPreg.date) + "　" + trl(nextPreg.label);
-  else if(lastPreg) pregVal = trl(lastPreg.label) + "：" + tr(lastPreg.done.result || tr("記録済"));
+  else if(pregDone) pregVal = trl(pregDone.label || "妊娠鑑定") + "：" + tr(pregDone.result || tr("記録済"));
   else pregVal = tr(m.breedingDate ? "予定なし" : "種付日が未入力");
 
   var otherVal = nextOther ? (fmtDate(nextOther.date) + "　" + nextOther.label) : tr("なし");
