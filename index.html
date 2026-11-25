@@ -221,6 +221,13 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
 .prow-label{font-size:13px;color:var(--muted)}
 .prow-date{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
 .prow-empty{font-size:13px;color:var(--muted)}
+.prow-off .prow-label,.prow-off .prow-date{color:var(--muted);text-decoration:line-through}
+.prow-btn{appearance:none;cursor:pointer;flex:none;border:1px solid var(--line-strong);
+  background:var(--card);color:var(--muted);border-radius:999px;
+  font-size:12px;padding:3px 10px;min-height:30px;white-space:nowrap}
+.prow-btn[aria-pressed="true"]{border-color:var(--exam);color:var(--exam);font-weight:700}
+.prow-btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.prow-keep{font-size:12px;color:var(--muted);flex:none;padding:0 4px}
 
 /* 左右の卵胞を並べて選ぶ */
 .ovaries{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;align-items:start}
@@ -505,7 +512,7 @@ en: {
 "今日のその他処置":"Other care today","今週のその他処置":"Other care this week",
 "今日":"Today","今週":"This week",
 "治療中の馬":"Horses under treatment",
-"次の直検":"Next exam","分娩予定":"Due to foal",
+"次の直検":"Next exam","分娩予定":"Due to foal","分娩予定（受胎なら）":"Due date (if pregnant)",
 
 /* --- 一覧・カード --- */
 "（馬名なし）":"(no name)",
@@ -550,6 +557,8 @@ en: {
 "馬名":"Horse name","場所":"Location","メモ":"Notes",
 "分娩日":"Foaling date","種付日":"Breeding date",
 "基準の日付":"Key dates","これからの予定":"Upcoming",
+"予定しない":"Not scheduled","戻す":"Undo","必ず出ます":"Always shown",
+"予定しないことにしている項目：{list}（「種付日を入力」から戻せます）":"Not scheduled: {list} (undo from \"Enter covering date\")",
 "自動で出る予定日":"Dates calculated for you",
 "分娩日か種付日を入れると、予定日がここに出ます。":"Enter a foaling or breeding date and the dates appear here.",
 "分娩後{n}日の直検日が出ます":"Gives the exam date {n} days after foaling",
@@ -705,7 +714,7 @@ hi: {
 "今日の妊娠鑑定":"आज की गर्भ जाँच","今週の妊娠鑑定":"इस सप्ताह की गर्भ जाँच",
 "今日のその他処置":"आज की अन्य देखभाल","今週のその他処置":"इस सप्ताह की अन्य देखभाल",
 "治療中の馬":"इलाज वाले घोड़े",
-"次の直検":"अगली जाँच","分娩予定":"ब्याने की तारीख",
+"次の直検":"अगली जाँच","分娩予定":"ब्याने की तारीख","分娩予定（受胎なら）":"ब्याने की तारीख (गर्भ होने पर)",
 
 "（馬名なし）":"(नाम नहीं)",
 "予定なし":"कुछ तय नहीं","なし":"कुछ नहीं","未入力":"दर्ज नहीं",
@@ -746,6 +755,8 @@ hi: {
 "馬名":"घोड़ी का नाम","場所":"जगह","メモ":"नोट",
 "分娩日":"ब्याने की तारीख","種付日":"ब्रीडिंग की तारीख",
 "基準の日付":"मुख्य तारीखें","これからの予定":"आगे की योजना",
+"予定しない":"योजना न बनाएँ","戻す":"वापस","必ず出ます":"हमेशा दिखेगा",
+"予定しないことにしている項目：{list}（「種付日を入力」から戻せます）":"योजना से हटाए गए: {list}（\"種付日を入力\" से वापस\u3002）",
 "自動で出る予定日":"अपने आप बनी तारीखें",
 "分娩日か種付日を入れると、予定日がここに出ます。":"ब्याने या ब्रीडिंग की तारीख डालें, तारीखें यहाँ दिखेंगी।",
 "分娩後{n}日の直検日が出ます":"ब्याने के {n} दिन बाद की जाँच तारीख बनेगी",
@@ -981,7 +992,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25g";
+var APP_VERSION = "2026-11-25h";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1260,6 +1271,9 @@ function toStore(body){
   o.done = {};
   var d = body.done || {};
   Object.keys(d).forEach(function(k){ o.done[k] = cleanRec(d[k]); });
+  o.skip = {};
+  var sk = body.skip || {};
+  Object.keys(sk).forEach(function(k){ if(sk[k]) o.skip[k] = true; });
   o.others = {};
   (body.others || []).forEach(function(x){
     if(!x || !x.id) return;
@@ -1285,6 +1299,13 @@ function mareDiff(prev, next){
   });
   Object.keys(pd).forEach(function(k){
     if(!(k in nd)) push(new FB.FieldPath("done", k), FB.deleteField());
+  });
+  var ps = prev.skip || {}, ns = next.skip || {};
+  Object.keys(ns).forEach(function(k){
+    if(!ps[k]) push(new FB.FieldPath("skip", k), true);
+  });
+  Object.keys(ps).forEach(function(k){
+    if(!ns[k]) push(new FB.FieldPath("skip", k), FB.deleteField());
   });
   var po = prev.others || {}, no = next.others || {};
   Object.keys(no).forEach(function(k){
@@ -1414,6 +1435,7 @@ function toMare(id, r){
     note: r.note || "",
     manual: (r.manual && r.manual.date) ? r.manual : null,
     done: r.done || {},
+    skip: r.skip || {},
     others: others,
     createdBy: r.createdBy || "", createdAt: r.createdAt || "", updatedAt: r.updatedAt || ""
   };
@@ -1677,6 +1699,10 @@ function expectedFoaling(m){
   if(mareStatus(m) !== "受胎") return "";
   return dueFrom(m.breedingDate);
 }
+/** 種付日さえあれば出す分娩予定日。受胎が未確認でも必ず見られるように。 */
+function plannedFoaling(m){
+  return m.breedingDate ? dueFrom(m.breedingDate) : "";
+}
 function foalingByDate(){
   var map = {};
   mares.forEach(function(m){
@@ -1691,11 +1717,16 @@ function stepsLabel(){
   return b.map(function(s){ return trl(s[1]).replace("種付後",""); }).join("・");
 }
 
+/* 予定ひとつひとつの見分け札。日付が変わると札も変わるので、
+   種付日を入れ直したときは「予定しない」も自動で解けます。 */
+function foalKey(foalingDate){ return "f" + foalOffset() + "@" + foalingDate; }
+function stepKey(n, breedingDate){ return "b" + n + "@" + breedingDate; }
+
 function scheduleFor(m){
   var out = [];
   if(m.foalingDate){
     out.push({
-      key: "f" + foalOffset() + "@" + m.foalingDate,
+      key: foalKey(m.foalingDate),
       kind: "直検",
       label: foalLabelJa(),
       date: addDays(m.foalingDate, foalOffset())
@@ -1704,7 +1735,7 @@ function scheduleFor(m){
   if(m.breedingDate){
     breedSteps().forEach(function(s){
       out.push({
-        key: "b" + s[0] + "@" + m.breedingDate,
+        key: stepKey(s[0], m.breedingDate),
         kind: "妊娠鑑定",
         label: s[1],
         date: addDays(m.breedingDate, s[0])
@@ -1730,8 +1761,22 @@ function scheduleFor(m){
     });
   });
   var doneMap = m.done || {};
+  var skipMap = m.skip || {};
+  /* 「予定しない」にしたものは外す。すでに記録が入っているものは残す。 */
+  out = out.filter(function(it){ return !(skipMap[it.key] && !doneMap[it.key]); });
   out.forEach(function(it){ it.done = doneMap[it.key] || null; it.mare = m; });
   out.sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); });
+  return out;
+}
+/* いまの分娩日・種付日に効いている「予定しない」の名前 */
+function skippedNow(m){
+  var sk = (m && m.skip) || {}, out = [];
+  if(m.foalingDate && sk[foalKey(m.foalingDate)]) out.push(trl(foalLabelJa()));
+  if(m.breedingDate){
+    ALL_STEPS.forEach(function(st){
+      if(sk[stepKey(st[0], m.breedingDate)]) out.push(trl(st[1]));
+    });
+  }
   return out;
 }
 function pendingFor(m){
@@ -2275,20 +2320,21 @@ function mareCard(m){
   var pregVal;
   if(nextPreg) pregVal = fmtDate(nextPreg.date) + "　" + trl(nextPreg.label);
   else if(lastPreg) pregVal = trl(lastPreg.label) + "：" + tr(lastPreg.done.result || tr("記録済"));
-  else pregVal = tr("種付日が未入力");
+  else pregVal = tr(m.breedingDate ? "予定なし" : "種付日が未入力");
 
   var otherVal = nextOther ? (fmtDate(nextOther.date) + "　" + nextOther.label) : tr("なし");
 
   var rows = [[tr("次の直検"), nextVal], ["妊娠鑑定", pregVal], ["その他処置", otherVal]];
-  var foalDue = expectedFoaling(m);
+  var foalDue = plannedFoaling(m);
   if(foalDue){
+    var sure = (st0 === "受胎");
     var fv = el("span");
     fv.appendChild(el("strong", null, fmtDate(foalDue)));
     fv.appendChild(document.createTextNode(" "));
     var fd0 = daysFrom(todayStr(), foalDue);
-    fv.appendChild(el("span","chip t",
+    fv.appendChild(el("span","chip " + (sure ? "t" : "n"),
       fd0 < 0 ? trf("{n}日経過", { n: -fd0 }) : fd0 === 0 ? tr("本日") : trf("あと{n}日", { n: fd0 })));
-    rows.push([tr("分娩予定"), fv]);
+    rows.push([tr(sure ? "分娩予定" : "分娩予定（受胎なら）"), fv]);
   }
   c.appendChild(rowsGrid(rows));
 
@@ -2756,28 +2802,41 @@ function openLogForm(t){
 }
 
 /* ----- 繁殖：新規 / 編集 ----- */
-function renderPreview(box, foaling, breeding){
+/* skip を渡すと、予定ひとつずつに「予定しない」ボタンが付きます。
+   分娩予定だけはボタンを付けません（必ず見えるように）。 */
+function renderPreview(box, foaling, breeding, skip, onChange){
   box.innerHTML = "";
   var any = false;
+
+  function row(key, label, date){
+    any = true;
+    var r = el("div","prow");
+    r.appendChild(el("span","prow-label", label));
+    r.appendChild(el("span","prow-date", fmtDate(date)));
+    if(skip){
+      var off = !!skip[key];
+      var b = el("button","prow-btn", tr(off ? "戻す" : "予定しない"));
+      b.type = "button";
+      b.setAttribute("aria-pressed", off ? "true" : "false");
+      b.addEventListener("click", function(){
+        if(skip[key]) delete skip[key]; else skip[key] = true;
+        if(onChange) onChange();
+      });
+      r.appendChild(b);
+      if(off) r.classList.add("prow-off");
+    }
+    box.appendChild(r);
+  }
+
   if(foaling){
     var d0 = addDays(foaling, foalOffset());
-    if(d0){
-      any = true;
-      var r0 = el("div","prow");
-      r0.appendChild(el("span","prow-label", trl(foalLabelJa())));
-      r0.appendChild(el("span","prow-date", fmtDate(d0)));
-      box.appendChild(r0);
-    }
+    if(d0) row(foalKey(foaling), trl(foalLabelJa()), d0);
   }
   if(breeding){
     breedSteps().forEach(function(s){
       var d = addDays(breeding, s[0]);
       if(!d) return;
-      any = true;
-      var r = el("div","prow");
-      r.appendChild(el("span","prow-label", trl(s[1])));
-      r.appendChild(el("span","prow-date", fmtDate(d)));
-      box.appendChild(r);
+      row(stepKey(s[0], breeding), trl(s[1]), d);
     });
   }
   if(breeding){
@@ -2787,6 +2846,7 @@ function renderPreview(box, foaling, breeding){
       var rf = el("div","prow");
       rf.appendChild(el("span","prow-label", tr("分娩予定（受胎した場合）")));
       rf.appendChild(el("span","prow-date", fmtDate(fd1)));
+      if(skip) rf.appendChild(el("span","prow-keep", tr("必ず出ます")));
       box.appendChild(rf);
     }
   }
@@ -2832,7 +2892,8 @@ function openMareForm(m){
   sheetBody.appendChild(wrap);
   sheetBody.appendChild(field(tr("個体メモ"), note, tr("気性や持病など、この馬について残しておきたいこと")));
 
-  function upd(){ renderPreview(box, foaling.value, breeding.value); }
+  var skip = Object.assign({}, (m && m.skip) || {});
+  function upd(){ renderPreview(box, foaling.value, breeding.value, skip, upd); }
   foaling.addEventListener("change", upd);
   breeding.addEventListener("change", upd);
   foaling.addEventListener("input", upd);
@@ -2861,6 +2922,7 @@ function openMareForm(m){
         memo: (m && m.manual) ? (m.manual.memo || "") : ""
       } : null,
       done: m ? (m.done || {}) : {},
+      skip: skip,
       others: m ? (m.others || []) : [],
       createdBy: m ? (m.createdBy || myId || "") : (myId || ""),
       createdAt: m ? (m.createdAt || new Date().toISOString()) : new Date().toISOString(),
@@ -2898,9 +2960,11 @@ function openMareDetail(id){
     g.appendChild(el("div","row-label", tr("種牡馬")));
     g.appendChild(el("div","row-value", m.stallion));
   }
-  var fdue = expectedFoaling(m);
+  var skipNow = skippedNow(m);
+  var fdue = plannedFoaling(m);
   if(fdue){
-    g.appendChild(el("div","row-label",tr("分娩予定")));
+    var sureD = (stNow === "受胎");
+    g.appendChild(el("div","row-label", tr(sureD ? "分娩予定" : "分娩予定（受胎なら）")));
     g.appendChild(el("div","row-value",
       trf("{d}（種付から{n}日）", { d: fmtDate(fdue), n: dueSpan(m.breedingDate) })));
   }
@@ -2957,6 +3021,11 @@ function openMareDetail(id){
 
   var pb = el("div","detail-block");
   pb.appendChild(el("h3", null, tr("これからの予定")));
+  if(skipNow.length){
+    pb.appendChild(el("div","log-meta",
+      trf("予定しないことにしている項目：{list}（「種付日を入力」から戻せます）",
+          { list: skipNow.join("・") })));
+  }
   if(!pend.length){
     pb.appendChild(el("div","log-meta",tr("予定はありません。分娩日か種付日を入れてください。")));
   }else{
@@ -3527,7 +3596,8 @@ function openBreedingForm(m){
   wrap.appendChild(box);
   sheetBody.appendChild(wrap);
 
-  function upd(){ renderPreview(box, "", date.value); }
+  var skip = Object.assign({}, m.skip || {});
+  function upd(){ renderPreview(box, "", date.value, skip, upd); }
   date.addEventListener("change", upd);
   date.addEventListener("input", upd);
   upd();
@@ -3546,12 +3616,14 @@ function openBreedingForm(m){
     delete body.id;
     body.breedingDate = date.value;
     body.stallion = st2.value.trim();
+    body.skip = skip;
     body.updatedAt = new Date().toISOString();
     var ok = await guardedWrite(function(){ return db.doc("mares/" + m.id).set(body); }, tr("種付日を登録しました"));
     save.disabled = false;
     if(ok){
       m.breedingDate = body.breedingDate;
       m.stallion = body.stallion;
+      m.skip = body.skip;
       m.manual = body.manual;
       openMareDetail(m.id);
     }
