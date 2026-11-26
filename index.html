@@ -215,19 +215,22 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
 .row-value{font-size:14px;word-break:break-word;font-variant-numeric:tabular-nums}
 .row-value strong{font-weight:700;font-size:15px}
 
-.preview{display:block}
-.prow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line)}
-.prow:first-child{border-top:none}
+/* 予定の一覧。1つの格子にして、日付が縦にそろうようにしています */
+.preview{display:grid;grid-template-columns:1fr auto auto}
+.prow{display:contents}
+.prow > *{border-top:1px solid var(--line);padding:7px 0;display:flex;align-items:center;min-width:0}
+.preview > .prow:first-child > *{border-top:none}
 .prow-label{font-size:13px;color:var(--muted)}
-.prow-date{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
-.prow-empty{font-size:13px;color:var(--muted)}
+.prow-date{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;
+  justify-content:flex-end;white-space:nowrap;padding-left:12px}
+.prow-act{justify-content:flex-end;padding-left:12px}
+.prow-empty{font-size:13px;color:var(--muted);grid-column:1 / -1}
 .prow-off .prow-label,.prow-off .prow-date{color:var(--muted);text-decoration:line-through}
 .prow-btn{appearance:none;cursor:pointer;flex:none;border:1px solid var(--line-strong);
   background:var(--card);color:var(--muted);border-radius:999px;
   font-size:12px;padding:3px 10px;min-height:30px;white-space:nowrap}
 .prow-btn[aria-pressed="true"]{border-color:var(--exam);color:var(--exam);font-weight:700}
 .prow-btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-.prow-keep{font-size:12px;color:var(--muted);flex:none;padding:0 4px}
 
 /* 左右の卵胞を並べて選ぶ */
 .ovaries{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;align-items:start}
@@ -992,7 +995,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-26b";
+var APP_VERSION = "2026-11-26c";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -2830,6 +2833,7 @@ function renderPreview(box, foaling, breeding, skip, onChange){
     var r = el("div","prow");
     r.appendChild(el("span","prow-label", label));
     r.appendChild(el("span","prow-date", fmtDate(date)));
+    var act = el("span","prow-act");
     if(skip){
       var off = !!skip[key];
       var b = el("button","prow-btn", tr(off ? "戻す" : "予定しない"));
@@ -2839,9 +2843,10 @@ function renderPreview(box, foaling, breeding, skip, onChange){
         if(skip[key]) delete skip[key]; else skip[key] = true;
         if(onChange) onChange();
       });
-      r.appendChild(b);
+      act.appendChild(b);
       if(off) r.classList.add("prow-off");
     }
+    r.appendChild(act);
     box.appendChild(r);
   }
 
@@ -2863,7 +2868,7 @@ function renderPreview(box, foaling, breeding, skip, onChange){
       var rf = el("div","prow");
       rf.appendChild(el("span","prow-label", tr("分娩予定（受胎した場合）")));
       rf.appendChild(el("span","prow-date", fmtDate(fd1)));
-      if(skip) rf.appendChild(el("span","prow-keep", tr("必ず出ます")));
+      rf.appendChild(el("span","prow-act"));   /* 分娩予定にボタンは付けません */
       box.appendChild(rf);
     }
   }
