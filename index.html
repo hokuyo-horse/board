@@ -434,7 +434,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 12px 24px}
   <button role="tab" data-tab="today" aria-selected="true"><span class="tab-n" id="n-today">—</span>今日の直検</button>
   <button role="tab" data-tab="todaytreat" aria-selected="false"><span class="tab-n" id="n-todaytreat">—</span>今日の治療</button>
   <button role="tab" data-tab="treat" aria-selected="false"><span class="tab-n" id="n-treat">—</span>治療</button>
-  <button role="tab" data-tab="exam" aria-selected="false"><span class="tab-n" id="n-exam">—</span>直検</button>
+  <button role="tab" data-tab="exam" aria-selected="false"><span class="tab-n" id="n-exam">—</span>繁殖</button>
   <button role="tab" data-tab="cal" aria-selected="false"><span class="tab-n" id="n-cal">—</span>予定表</button>
 </nav>
 
@@ -502,7 +502,7 @@ en: {
 
 /* --- タブ・見出し --- */
 "治療・直検ボード":"Treatment & Exam Board",
-"今日":"Today","治療":"Treatment","予定表":"Calendar",
+"今日":"Today","治療":"Treatment","予定表":"Calendar","繁殖":"Breeding",
 "今日の直検":"Exams today","今日の治療":"Care today",
 "名前":"Name","設定":"Settings","言語":"Language",
 "今週":"This week","全頭":"All mares","馬名でさがす":"Search by name","さがした結果":"Search results","その名前の馬は見つかりません。":"No mare with that name.","消す":"Clear",
@@ -705,7 +705,7 @@ hi: {
 "分娩後{n}日":"ब्याने के {n} दिन बाद",
 
 "治療・直検ボード":"इलाज और जाँच बोर्ड",
-"今日":"आज","治療":"इलाज","予定表":"कैलेंडर",
+"今日":"आज","治療":"इलाज","予定表":"कैलेंडर","繁殖":"प्रजनन",
 "今日の直検":"आज की जाँच","今日の治療":"आज की देखभाल",
 "名前":"नाम","設定":"सेटिंग","言語":"भाषा",
 "今週":"इस सप्ताह","全頭":"सभी घोड़ी","馬名でさがす":"नाम से खोजें","さがした結果":"खोज के नतीजे","その名前の馬は見つかりません。":"उस नाम की घोड़ी नहीं मिली।","消す":"मिटाएँ",
@@ -915,7 +915,7 @@ var farmNameNow = "";
 function applyStaticLang(){
   var brand = document.querySelector(".brand");
   if(brand) brand.textContent = farmNameNow || tr("治療・直検ボード");
-  var names = { today:"今日の直検", todaytreat:"今日の治療", treat:"治療", exam:"直検", cal:"予定表" };
+  var names = { today:"今日の直検", todaytreat:"今日の治療", treat:"治療", exam:"繁殖", cal:"予定表" };
   Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function(b){
     var n = b.querySelector(".tab-n");
     b.textContent = "";
@@ -992,7 +992,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-25i";
+var APP_VERSION = "2026-11-26a";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -1901,7 +1901,8 @@ function paint(){
   document.getElementById("n-today").textContent = String(dueItems(todayStr()).length);
   document.getElementById("n-todaytreat").textContent = String(treatDueToday().length);
   document.getElementById("n-treat").textContent = String(treatList().length);
-  document.getElementById("n-exam").textContent = String(examList().length);
+  /* 繁殖タブの数字は、絞り込みに関係なく「全頭」を出します */
+  document.getElementById("n-exam").textContent = String(mares.length);
   document.getElementById("n-cal").textContent = String(dueItems(addDays(todayStr(), 7)).length);
 
   Array.prototype.forEach.call(document.querySelectorAll("#tabs button"), function(b){
