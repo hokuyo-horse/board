@@ -505,7 +505,7 @@ en: {
 "今日":"Today","治療":"Treatment","予定表":"Calendar","繁殖":"Breeding",
 "今日の直検":"Exams today","今日の治療":"Care today",
 "名前":"Name","設定":"Settings","言語":"Language",
-"今週":"This week","全頭":"All mares","馬名でさがす":"Search by name","さがした結果":"Search results","その名前の馬は見つかりません。":"No mare with that name.","消す":"Clear",
+"今週":"This week","全頭":"All mares","馬名でさがす":"Search by name","馬名・厩舎でさがす":"Search by name or barn","さがした結果":"Search results","その名前の馬は見つかりません。":"No mare with that name.","その名前・厩舎の馬は見つかりません。":"No mare with that name or barn.","消す":"Clear",
 "期限すぎ":"Overdue",
 "今日の直検":"Rectal exams today","今週の直検":"Rectal exams this week",
 "今日の妊娠鑑定":"Pregnancy checks today","今週の妊娠鑑定":"Pregnancy checks this week",
@@ -708,7 +708,7 @@ hi: {
 "今日":"आज","治療":"इलाज","予定表":"कैलेंडर","繁殖":"प्रजनन",
 "今日の直検":"आज की जाँच","今日の治療":"आज की देखभाल",
 "名前":"नाम","設定":"सेटिंग","言語":"भाषा",
-"今週":"इस सप्ताह","全頭":"सभी घोड़ी","馬名でさがす":"नाम से खोजें","さがした結果":"खोज के नतीजे","その名前の馬は見つかりません。":"उस नाम की घोड़ी नहीं मिली।","消す":"मिटाएँ",
+"今週":"इस सप्ताह","全頭":"सभी घोड़ी","馬名でさがす":"नाम से खोजें","馬名・厩舎でさがす":"नाम या अस्तबल से खोजें","さがした結果":"खोज के नतीजे","その名前の馬は見つかりません。":"उस नाम की घोड़ी नहीं मिली।","その名前・厩舎の馬は見つかりません。":"उस नाम या अस्तबल की घोड़ी नहीं मिली।","消す":"मिटाएँ",
 "期限すぎ":"समय निकल गया",
 "今日の直検":"आज की रेक्टल जाँच","今週の直検":"इस सप्ताह की रेक्टल जाँच",
 "今日の妊娠鑑定":"आज की गर्भ जाँच","今週の妊娠鑑定":"इस सप्ताह की गर्भ जाँच",
@@ -992,7 +992,7 @@ function toast(msg){
 }
 
 /* 画面の版。設定のいちばん下に出ます。新しくしたらここも変えること */
-var APP_VERSION = "2026-11-26a";
+var APP_VERSION = "2026-11-26b";
 
 /* ============ 状態 ============ */
 var myId = "";          // このアプリでは「記録した人の名前」をそのまま使う
@@ -2121,10 +2121,10 @@ function paintExam(view){
   /* ----- 馬名でさがす ----- */
   var search = el("div","search");
   var srow = el("div","search-row");
-  var si = inp("text", mareQuery, tr("馬名でさがす"));
+  var si = inp("text", mareQuery, tr("馬名・厩舎でさがす"));
   si.className = "search-input";
   si.autocomplete = "off";
-  si.setAttribute("aria-label", tr("馬名でさがす"));
+  si.setAttribute("aria-label", tr("馬名・厩舎でさがす"));
   srow.appendChild(si);
   var sclr = el("button","search-clear","✕");
   sclr.type = "button";
@@ -2139,11 +2139,19 @@ function paintExam(view){
   var listBox = el("div");
   view.appendChild(listBox);
 
+  /* 入力が馬名・厩舎のどこに当たったか。当たらなければ -1。
+     小さいほど先に並びます（馬名の一致を厩舎より先に） */
+  function hitAt(m, q){
+    var i = normName(m.horse).indexOf(q);
+    if(i >= 0) return i;
+    var p = normName(m.place).indexOf(q);
+    return p >= 0 ? 1000 + p : -1;
+  }
   /* 入力に当てはまる馬。入力がなければ null（＝さがしていない） */
   function hits(){
     var q = normName(mareQuery);
     if(!q) return null;
-    return mares.filter(function(m){ return normName(m.horse).indexOf(q) >= 0; });
+    return mares.filter(function(m){ return hitAt(m, q) >= 0; });
   }
 
   function fillSuggest(){
@@ -2152,8 +2160,8 @@ function paintExam(view){
     var found = hits();
     if(!q || !found || !found.length){ sug.hidden = true; return; }
     found.slice().sort(function(a, b){
-      var ai = normName(a.horse).indexOf(q), bi = normName(b.horse).indexOf(q);
-      if(ai !== bi) return ai - bi;        /* 頭から一致するものを先に */
+      var ai = hitAt(a, q), bi = hitAt(b, q);
+      if(ai !== bi) return ai - bi;        /* 馬名の一致を先に、頭から一致するものを先に */
       return sortByHorse(a, b);
     }).slice(0, 8).forEach(function(m){
       var b = el("button","suggest-item");
@@ -2176,7 +2184,7 @@ function paintExam(view){
     var found = hits();
     if(found){
       if(!found.length){
-        listBox.appendChild(el("div","empty", tr("その名前の馬は見つかりません。")));
+        listBox.appendChild(el("div","empty", tr("その名前・厩舎の馬は見つかりません。")));
         return;
       }
       var fl = found.slice().sort(byStage);
